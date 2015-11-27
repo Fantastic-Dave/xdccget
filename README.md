@@ -51,13 +51,13 @@ the depended libraries (OpenSSL and for some systems argp-library) and use the c
 
 ### Ubuntu and derivants
 To compile xdccget under Ubuntu and other distros like Linux Mint you have to install the package libssl-dev with apt-get.
-Also you need the build-essentials package. 
+You also need the build-essentials package. 
 
 ### other linux distros
 You need to make sure, that you have the openssl-development packages for you favorite distribution installed.
 
 ### OSX and BSD
-For osx and bsd systems you need to also installed the development files for openssl. You also need to install
+For osx and bsd systems you need to also install the development files for openssl. You need to install
 the library argp, which is used to parse command line arguments. Please make sure, that you rename the Makefile.FreeBSD
 for example to Makefile if you want to compile for FreeBSD.
 
