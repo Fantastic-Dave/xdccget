@@ -51,7 +51,7 @@ the depended libraries (OpenSSL and for some systems argp-library) and use the c
 
 ### Ubuntu and derivants
 To compile xdccget under Ubuntu and other distros like Linux Mint you have to install the package libssl-dev with apt-get.
-You also need the build-essentials package. 
+You also need the build-essential package. 
 
 ### other linux distros
 You need to make sure, that you have the openssl-development packages for you favorite distribution installed.
@@ -66,3 +66,11 @@ For windows you first need to install cygwin. Please make sure that you install 
 cygwin. If you have installed all depedent libraries then you can compile xdccget with cygwin by using the Makefile.cygwin.
 Please rename Makefile.cygwin to Makefile and then run make from the cygwin terminal.
 
+## Configure xdccget
+You can configure some options with the config file. It is placed in the folder .xdccget in your home directory of your operating system. The following options are currently supported:
+
+``` 
+downloadDir - this defines the default directory used to store the downloaded files
+logLevel - this defines the default logging level. valid options are info, warn and error
+allowAllCerts - this options will allow silently all self signed certificates if set to true
+```
