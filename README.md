@@ -68,7 +68,7 @@ for example to Makefile if you want to compile for FreeBSD.
 If you use pkg on FreeBSD for package-management you can issue the following command to install the required libs:
 
 ```
-sudo pkg add gcc argp-standalone openssl
+sudo pkg install gcc argp-standalone openssl
 ```
 
 On OSX and other BSD variants you have to use an alternative way to install the packages.
