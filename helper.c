@@ -51,31 +51,31 @@ void logprintf(int logLevel, char *formatString, ...) {
     va_start(va_alist, formatString);
 
     switch (logLevel) {
-    case LOG_QUIET:
-        if (cfg->logLevel >= LOG_QUIET) {
-			logprintf_line(stdout, KBLU, "Quiet", formatString, va_alist);
-        }
-        break;
-    case LOG_INFO:
-        if (cfg->logLevel >= LOG_INFO) {
-			logprintf_line(stdout, KGRN, "Info", formatString, va_alist);
-        }
-        break;
-    case LOG_WARN:
-        if (cfg->logLevel >= LOG_WARN) {
-			logprintf_line(stderr, KYEL, "Warning", formatString, va_alist);
-        }
-        break;
-    case LOG_ERR:
-        if (cfg->logLevel >= LOG_ERR) {
-			logprintf_line(stderr, KRED, "Error", formatString, va_alist);
-        }
-        break;
-    default:
-        DBG_WARN("logprintf called with unknown log-level. using normal logging.");
-        vfprintf(stdout, formatString, va_alist);
-        fprintf(stdout, "\n");
-        break;
+        case LOG_QUIET:
+            if (cfg->logLevel >= LOG_QUIET) {
+                logprintf_line(stdout, KBLU, "Quiet", formatString, va_alist);
+            }
+            break;
+        case LOG_INFO:
+            if (cfg->logLevel >= LOG_INFO) {
+                logprintf_line(stdout, KGRN, "Info", formatString, va_alist);
+            }
+            break;
+        case LOG_WARN:
+            if (cfg->logLevel >= LOG_WARN) {
+                logprintf_line(stderr, KYEL, "Warning", formatString, va_alist);
+            }
+            break;
+        case LOG_ERR:
+            if (cfg->logLevel >= LOG_ERR) {
+                logprintf_line(stderr, KRED, "Error", formatString, va_alist);
+            }
+            break;
+        default:
+            DBG_WARN("logprintf called with unknown log-level. using normal logging.");
+            vfprintf(stdout, formatString, va_alist);
+            fprintf(stdout, "\n");
+            break;
     }
 
     va_end(va_alist);
