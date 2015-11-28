@@ -232,8 +232,6 @@ static int ssl_send(irc_session_t * session) {
     return -1;
 }
 
-#endif
-
 
 // Handles both SSL and non-SSL reads.
 // Returns -1 in case there is an error and socket should be closed/connection terminated
