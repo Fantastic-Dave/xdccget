@@ -84,9 +84,9 @@ void logprintf(int logLevel, char *formatString, ...) {
 void initRand() {
     time_t t = time(NULL);
 	
-	if (t == ((time_t) -1)) {
-		DBG_ERR("time failed");
-	}
+    if (t == ((time_t) -1)) {
+        DBG_ERR("time failed");
+    }
 	
     srand((unsigned int) t);
 }
