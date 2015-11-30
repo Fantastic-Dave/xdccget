@@ -74,7 +74,7 @@ sudo pkg install gcc argp-standalone openssl
 On OSX and other BSD variants you have to use an alternative way to install the packages.
 
 ### Windows
-For windows you first need to install cygwin. Please make sure that you install gcc, argp and openssl-dev with
+For windows you first need to install cygwin. Please make sure that you install gcc-core, libargp and openssl-devel with
 cygwin. If you have installed all depedent libraries then you can compile xdccget with cygwin by using the Makefile.cygwin.
 Please rename Makefile.cygwin to Makefile and then run make from the cygwin terminal.
 
