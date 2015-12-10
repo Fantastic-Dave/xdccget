@@ -1,4 +1,5 @@
-CFLAGS = -DENABLE_SSL -DFILE_API -DDEBUG -Wall -Wfatal-errors -g -I libircclient-include/ -I /usr/local/include -L /usr/local/lib
+CFLAGS = -DENABLE_SSL -DFILE_API -Wall -Wfatal-errors -g -I libircclient-include/ -I /usr/local/include -L /usr/local/lib
+#CFLAGS += -DDEBUG
 LIBS = -lssl -lcrypto -lpthread -largp
 PROG = xdccget
 

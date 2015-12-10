@@ -1,4 +1,5 @@
-CFLAGS =-std=gnu11 -DENABLE_SSL -DDEBUG -DENABLE_IPV6 -Wall -Wfatal-errors -Os -I libircclient-include/
+CFLAGS =-std=gnu11 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -I libircclient-include/
+#CFLAGS += -DDEBUG
 LIBS = -lssl -lcrypto -lpthread
 PROG = xdccget
 
