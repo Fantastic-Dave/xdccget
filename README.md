@@ -53,6 +53,10 @@ the depended libraries (OpenSSL and for some systems argp-library) and use the c
 To compile xdccget under Ubuntu and other distros like Linux Mint you have to install the package libssl-dev with apt-get.
 You also need the build-essential package. 
 
+```
+sudo apt-get install libssl-dev build-essential
+```
+
 ### other linux distros
 You need to make sure, that you have the openssl-development packages for you favorite distribution installed.
 
@@ -61,8 +65,16 @@ For osx and bsd systems you need to also install the development files for opens
 the library argp, which is used to parse command line arguments. Please make sure, that you rename the Makefile.FreeBSD
 for example to Makefile if you want to compile for FreeBSD.
 
+If you use pkg on FreeBSD for package-management you can issue the following command to install the required libs:
+
+```
+sudo pkg install gcc argp-standalone openssl
+```
+
+On OSX and other BSD variants you have to use an alternative way to install the packages.
+
 ### Windows
-For windows you first need to install cygwin. Please make sure that you install gcc, argp and openssl-dev with
+For windows you first need to install cygwin. Please make sure that you install gcc-core, libargp and openssl-devel with
 cygwin. If you have installed all depedent libraries then you can compile xdccget with cygwin by using the Makefile.cygwin.
 Please rename Makefile.cygwin to Makefile and then run make from the cygwin terminal.
 
