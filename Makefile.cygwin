@@ -1,5 +1,5 @@
 CFLAGS =-std=gnu11 -DWINDOWS_BUILD -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -O3 -I libircclient-include/
-CFLAGS += -DDEBUG
+#CFLAGS += -DDEBUG
 LIBS = -lssl -lcrypto -lpthread -largp
 PROG = xdccget
 
