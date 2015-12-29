@@ -391,7 +391,7 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
     else {
         context->fd = Open(completePath, "w");
 
-        logprintf(LOG_INFO, "file %s does not exists. creating file and downloading it now.", completePath);
+        logprintf(LOG_INFO, "file %s does not exist. creating file and downloading it now.", completePath);
 accept_flag:			
         irc_dcc_accept (session, dccid, context, callback_dcc_recv_file);
         alarm(1);
