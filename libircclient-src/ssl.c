@@ -16,6 +16,7 @@
 #if defined (ENABLE_SSL)
 
 #include <pthread.h>
+#include <openssl/ssl.h>
 
 #include "session.h"
 
@@ -66,8 +67,8 @@ int initSslContext(irc_session_t *session) {
     //const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
     //const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
 
-    const char * PREFERRED_CIPHERS = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
-    const long flags = SSL_OP_NO_SSLv2;
+    const char * PREFERRED_CIPHERS = "ALL:!RC4:!PSK:!SRP:!ADH:!LOW:!EXP:!MD5:!aNULL@STRENGTH";
+    const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
 
     // Load the strings and init the library
     SSL_load_error_strings();
@@ -83,10 +84,11 @@ int initSslContext(irc_session_t *session) {
     if (!SSL_library_init())
         return LIBIRC_ERR_SSL_INIT_FAILED;
 
-    if (RAND_status() == 0)
+    if (RAND_status () != 1)
         return LIBIRC_ERR_SSL_INIT_FAILED;
 
     // Create an SSL context; currently a single context is used for all connections
+    // hint: SSLv23_method means: TLS 1.0, 1.1 and 1.2. we disabled sslv2 and sslv3 with the flags above...
     ssl_context = SSL_CTX_new(SSLv23_method());
 
     if (!ssl_context)
@@ -101,11 +103,13 @@ int initSslContext(irc_session_t *session) {
     // Disable session caching
     SSL_CTX_set_session_cache_mode(ssl_context, SSL_SESS_CACHE_OFF);
 
-    if (session == NULL) {
+    if (session->verify_callback == NULL) {
         SSL_CTX_set_verify(ssl_context, SSL_VERIFY_NONE, 0);
     } else {
         SSL_CTX_set_verify(ssl_context, SSL_VERIFY_PEER, session->verify_callback);
     }
+    
+    SSL_CTX_set_default_verify_paths(ssl_context);
 
     // Enable SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER so we can move the buffer during sending
     SSL_CTX_set_mode(ssl_context, SSL_CTX_get_mode(ssl_context) | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER | SSL_MODE_ENABLE_PARTIAL_WRITE);

@@ -282,128 +282,11 @@ static void print_validation_errstr(long verify_result) {
         logprintf(LOG_ERR, "Issued certificate has expired.");
         break;
     default:
-        logprintf(LOG_ERR, "  %s\n", X509_verify_cert_error_string(verify_result));
+        logprintf(LOG_ERR, "  %s", X509_verify_cert_error_string(verify_result));
     }
 }
 
-static bool pattern_match(const char *pattern, const char *string) {
-    const char *p = pattern, *n = string;
-    char c;
-
-    for (; (c = tolower(*p++)) != '\0'; n++) {
-        if (c == '*') {
-            for (c = tolower(*p); c == '*'; c = tolower(*++p));
-
-            for (; *n != '\0'; n++) {
-                if (tolower(*n) == c && pattern_match(p, n)) {
-                    return true;
-                }
-            }
-
-            return c == '\0';
-        } else {
-            if (c != tolower(*n)) {
-                return false;
-            }
-        }
-    }
-
-    return *n == '\0';
-}
-
-static bool verify_alt_names (SSL *ssl, GENERAL_NAMES *subjectAltNames) {
-    char *host = getCfg()->ircServer;
-    bool alt_name_checked = false;
-    int i;
-    
-    host++;
-    ASN1_OCTET_STRING *host_in_octet_string = a2i_IPADDRESS (host);
-    int num_alt_names = sk_GENERAL_NAME_num (subjectAltNames);
-    
-    for (i = 0; i < num_alt_names; i++) {
-        const GENERAL_NAME *name = sk_GENERAL_NAME_value (subjectAltNames, i);
-        if (name == NULL) {
-            continue;
-        }
-        
-        if (host_in_octet_string) {
-            if (name->type == GEN_IPADD) {
-                alt_name_checked = true;
-                if (!ASN1_STRING_cmp(host_in_octet_string,
-                        name->d.iPAddress))
-                    break;
-            }
-        }
-        else if (name->type == GEN_DNS) {
-            unsigned char *name_in_utf8 = NULL;
-            alt_name_checked = true;
-            if (0 <= ASN1_STRING_to_UTF8 (&name_in_utf8, name->d.dNSName)) {
-                if (pattern_match ((char *)name_in_utf8, host) &&
-                            (strlen ((char *)name_in_utf8) ==
-                                (size_t) ASN1_STRING_length (name->d.dNSName))) {
-                    OPENSSL_free (name_in_utf8);
-                    break;
-                }
-                OPENSSL_free (name_in_utf8);
-            }
-        }
-    }
-    
-    sk_GENERAL_NAME_pop_free(subjectAltNames, GENERAL_NAME_free);
-    if (host_in_octet_string)
-        ASN1_OCTET_STRING_free(host_in_octet_string);
-
-    if (alt_name_checked == true && i >= num_alt_names) {
-        logprintf(LOG_ERR, "no certificate subject alternative name matches requested host name");
-        return false;
-    }
-    
-    return true;
-}
-
-static bool verify_common_name(SSL *ssl, X509 *cert) {
-    char common_name[256];
-    char *host = getCfg()->ircServer;
-    host++;
-
-    X509_NAME *xname = X509_get_subject_name(cert);
-    common_name[0] = '\0';
-    X509_NAME_get_text_by_NID(xname, NID_commonName, common_name, sizeof (common_name));
-    
-    if (!pattern_match (common_name, host)) {
-        logprintf (LOG_ERR, "certificate common name %s doesn't match requested host name %s.", common_name, host);
-        return false;
-    }
-
-    int i = -1, j;
-    X509_NAME_ENTRY *xentry;
-    ASN1_STRING *sdata;
-
-    if (xname) {
-        for (;;) {
-            j = X509_NAME_get_index_by_NID(xname, NID_commonName, i);
-            if (j == -1) {
-                break;
-            }
-            i = j;
-        }
-    }
-
-    xentry = X509_NAME_get_entry(xname, i);
-    sdata = X509_NAME_ENTRY_get_data(xentry);
-
-    if (strlen (common_name) != (size_t) ASN1_STRING_length (sdata)) {
-        logprintf (LOG_ERR, "certificate common name is invalid (contains a NUL character).\n"
-                "This may be an indication that the host is not who it claims to be\n"
-                "(that is, it is not the real)");
-        return false;
-    }
-    
-    return true;
-}
-
-
-int openssl_check_certificate_callback(int preverify_ok, X509_STORE_CTX *ctx) {
+int openssl_check_certificate_callback(int verify_result, X509_STORE_CTX *ctx) {
     SSL *ssl;
     X509* cert =ctx->cert;
     struct xdccGetConfig *cfg = getCfg();
@@ -418,38 +301,26 @@ int openssl_check_certificate_callback(int preverify_ok, X509_STORE_CTX *ctx) {
     char *subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
     char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);
     
-    logprintf(LOG_INFO, "Got the following certificate:");
+    logprintf(LOG_INFO, "Got the following certificate with");
     logprintf(LOG_INFO, "%s", subj);
     logprintf(LOG_INFO, "The issuer was:");
     logprintf(LOG_INFO, "%s", issuer);
     
-    if (cfg_get_bit(cfg, ALLOW_ALL_CERTS_FLAG)) {
-        return 1;
+    if (!verify_result) {
+        print_validation_errstr(ctx->error);
     }
-    
-    int verify_result = SSL_get_verify_result(ssl);
-    
-    if (verify_result != X509_V_OK) {
-        print_validation_errstr(verify_result);
-        return 0;
-    }
-    
-    GENERAL_NAMES *subjectAltNames = X509_get_ext_d2i (cert, NID_subject_alt_name, NULL, NULL);
-
-    if (subjectAltNames) {
-        if (!verify_alt_names(ssl, subjectAltNames)) {
-            return 0;
-        }
-    }
-    
-    if (!verify_common_name(ssl, cert)) {
-        return 0;
+    else {
+        logprintf(LOG_INFO, "This certificate is trusted");
     }
     
     free(subj);
     free(issuer);
+    
+    if (cfg_get_bit(cfg, ALLOW_ALL_CERTS_FLAG)) {
+        return 1;
+    }
 
-    return 1;
+    return verify_result;
 }
 
 #endif
