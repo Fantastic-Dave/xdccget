@@ -6,6 +6,8 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <inttypes.h>
+#include <ctype.h>
+ #include <openssl/x509v3.h>
 
 #include "helper.h"
 #include "file.h"
@@ -262,90 +264,156 @@ void outputProgress(struct dccDownloadProgress *progress) {
 
 #ifdef ENABLE_SSL
 
-static const char* get_validation_errstr(long e) {
-    switch ((int) e) {
-    case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-        return "ERR_UNABLE_TO_GET_ISSUER_CERT";
-    case X509_V_ERR_UNABLE_TO_GET_CRL:
-        return "ERR_UNABLE_TO_GET_CRL";
-    case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-        return "ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE";
-    case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
-        return "ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE";
-    case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-        return "ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY";
-    case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-        return "ERR_CERT_SIGNATURE_FAILURE";
-    case X509_V_ERR_CRL_SIGNATURE_FAILURE:
-        return "ERR_CRL_SIGNATURE_FAILURE";
-    case X509_V_ERR_CERT_NOT_YET_VALID:
-        return "ERR_CERT_NOT_YET_VALID";
-    case X509_V_ERR_CERT_HAS_EXPIRED:
-        return "ERR_CERT_HAS_EXPIRED";
-    case X509_V_ERR_CRL_NOT_YET_VALID:
-        return "ERR_CRL_NOT_YET_VALID";
-    case X509_V_ERR_CRL_HAS_EXPIRED:
-        return "ERR_CRL_HAS_EXPIRED";
-    case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-        return "ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD";
-    case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-        return "ERR_ERROR_IN_CERT_NOT_AFTER_FIELD";
-    case X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
-        return "ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD";
-    case X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:
-        return "ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD";
-    case X509_V_ERR_OUT_OF_MEM:
-        return "ERR_OUT_OF_MEM";
-    case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-        return "ERR_DEPTH_ZERO_SELF_SIGNED_CERT";
-    case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-        return "ERR_SELF_SIGNED_CERT_IN_CHAIN";
+static void print_validation_errstr(long verify_result) {
+    logprintf(LOG_ERR, "There was a problem with the server certificate:");
+
+    switch (verify_result) {
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-        return "ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY";
-    case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
-        return "ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE";
-    case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-        return "ERR_CERT_CHAIN_TOO_LONG";
-    case X509_V_ERR_CERT_REVOKED:
-        return "ERR_CERT_REVOKED";
-    case X509_V_ERR_INVALID_CA:
-        return "ERR_INVALID_CA";
-    case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-        return "ERR_PATH_LENGTH_EXCEEDED";
-    case X509_V_ERR_INVALID_PURPOSE:
-        return "ERR_INVALID_PURPOSE";
-    case X509_V_ERR_CERT_UNTRUSTED:
-        return "ERR_CERT_UNTRUSTED";
-    case X509_V_ERR_CERT_REJECTED:
-        return "ERR_CERT_REJECTED";
-    case X509_V_ERR_SUBJECT_ISSUER_MISMATCH:
-        return "ERR_SUBJECT_ISSUER_MISMATCH";
-    case X509_V_ERR_AKID_SKID_MISMATCH:
-        return "ERR_AKID_SKID_MISMATCH";
-    case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH:
-        return "ERR_AKID_ISSUER_SERIAL_MISMATCH";
-    case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-        return "ERR_KEYUSAGE_NO_CERTSIGN";
-    case X509_V_ERR_INVALID_EXTENSION:
-        return "ERR_INVALID_EXTENSION";
-    case X509_V_ERR_INVALID_POLICY_EXTENSION:
-        return "ERR_INVALID_POLICY_EXTENSION";
-    case X509_V_ERR_NO_EXPLICIT_POLICY:
-        return "ERR_NO_EXPLICIT_POLICY";
-    case X509_V_ERR_APPLICATION_VERIFICATION:
-        return "ERR_APPLICATION_VERIFICATION";
+        logprintf(LOG_ERR, "Unable to locally verify the issuer's authority.");
+        break;
+    case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+    case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+        logprintf(LOG_ERR, "Self-signed certificate encountered.");
+        break;
+    case X509_V_ERR_CERT_NOT_YET_VALID:
+        logprintf(LOG_ERR, "Issued certificate not yet valid.");
+        break;
+    case X509_V_ERR_CERT_HAS_EXPIRED:
+        logprintf(LOG_ERR, "Issued certificate has expired.");
+        break;
     default:
-        return "ERR_UNKNOWN";
+        logprintf(LOG_ERR, "  %s\n", X509_verify_cert_error_string(verify_result));
     }
+}
+
+static bool pattern_match(const char *pattern, const char *string) {
+    const char *p = pattern, *n = string;
+    char c;
+
+    for (; (c = tolower(*p++)) != '\0'; n++) {
+        if (c == '*') {
+            for (c = tolower(*p); c == '*'; c = tolower(*++p));
+
+            for (; *n != '\0'; n++) {
+                if (tolower(*n) == c && pattern_match(p, n)) {
+                    return true;
+                }
+            }
+
+            return c == '\0';
+        } else {
+            if (c != tolower(*n)) {
+                return false;
+            }
+        }
+    }
+
+    return *n == '\0';
+}
+
+static bool verify_alt_names (SSL *ssl, GENERAL_NAMES *subjectAltNames) {
+    char *host = getCfg()->ircServer;
+    bool alt_name_checked = false;
+    int i;
+    
+    host++;
+    ASN1_OCTET_STRING *host_in_octet_string = a2i_IPADDRESS (host);
+    int num_alt_names = sk_GENERAL_NAME_num (subjectAltNames);
+    
+    for (i = 0; i < num_alt_names; i++) {
+        const GENERAL_NAME *name = sk_GENERAL_NAME_value (subjectAltNames, i);
+        if (name == NULL) {
+            continue;
+        }
+        
+        if (host_in_octet_string) {
+            if (name->type == GEN_IPADD) {
+                alt_name_checked = true;
+                if (!ASN1_STRING_cmp(host_in_octet_string,
+                        name->d.iPAddress))
+                    break;
+            }
+        }
+        else if (name->type == GEN_DNS) {
+            unsigned char *name_in_utf8 = NULL;
+            alt_name_checked = true;
+            if (0 <= ASN1_STRING_to_UTF8 (&name_in_utf8, name->d.dNSName)) {
+                if (pattern_match ((char *)name_in_utf8, host) &&
+                            (strlen ((char *)name_in_utf8) ==
+                                (size_t) ASN1_STRING_length (name->d.dNSName))) {
+                    OPENSSL_free (name_in_utf8);
+                    break;
+                }
+                OPENSSL_free (name_in_utf8);
+            }
+        }
+    }
+    
+    sk_GENERAL_NAME_pop_free(subjectAltNames, GENERAL_NAME_free);
+    if (host_in_octet_string)
+        ASN1_OCTET_STRING_free(host_in_octet_string);
+
+    if (alt_name_checked == true && i >= num_alt_names) {
+        logprintf(LOG_ERR, "no certificate subject alternative name matches requested host name");
+        return false;
+    }
+    
+    return true;
+}
+
+static bool verify_common_name(SSL *ssl, X509 *cert) {
+    char common_name[256];
+    char *host = getCfg()->ircServer;
+    host++;
+
+    X509_NAME *xname = X509_get_subject_name(cert);
+    common_name[0] = '\0';
+    X509_NAME_get_text_by_NID(xname, NID_commonName, common_name, sizeof (common_name));
+    
+    if (!pattern_match (common_name, host)) {
+        logprintf (LOG_ERR, "certificate common name %s doesn't match requested host name %s.", common_name, host);
+        return false;
+    }
+
+    int i = -1, j;
+    X509_NAME_ENTRY *xentry;
+    ASN1_STRING *sdata;
+
+    if (xname) {
+        for (;;) {
+            j = X509_NAME_get_index_by_NID(xname, NID_commonName, i);
+            if (j == -1) {
+                break;
+            }
+            i = j;
+        }
+    }
+
+    xentry = X509_NAME_get_entry(xname, i);
+    sdata = X509_NAME_ENTRY_get_data(xentry);
+
+    if (strlen (common_name) != (size_t) ASN1_STRING_length (sdata)) {
+        logprintf (LOG_ERR, "certificate common name is invalid (contains a NUL character).\n"
+                "This may be an indication that the host is not who it claims to be\n"
+                "(that is, it is not the real)");
+        return false;
+    }
+    
+    return true;
 }
 
 
 int openssl_check_certificate_callback(int preverify_ok, X509_STORE_CTX *ctx) {
     SSL *ssl;
-    X509* cert = ctx->cert;
+    X509* cert =ctx->cert;
     struct xdccGetConfig *cfg = getCfg();
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
+    
+    if (cert == NULL) {
+        logprintf(LOG_ERR, "Got no certificate from the server.");
+        return 0;
+    }
 
     char *subj = X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0);
     char *issuer = X509_NAME_oneline(X509_get_issuer_name(cert), NULL, 0);
@@ -355,18 +423,33 @@ int openssl_check_certificate_callback(int preverify_ok, X509_STORE_CTX *ctx) {
     logprintf(LOG_INFO, "The issuer was:");
     logprintf(LOG_INFO, "%s", issuer);
     
-    if (preverify_ok == 0) {
-        logprintf(LOG_ERR, "There was a problem with the server certificate:");
-        logprintf(LOG_ERR, "%s", get_validation_errstr(ctx->error));
+    if (cfg_get_bit(cfg, ALLOW_ALL_CERTS_FLAG)) {
+        return 1;
+    }
+    
+    int verify_result = SSL_get_verify_result(ssl);
+    
+    if (verify_result != X509_V_OK) {
+        print_validation_errstr(verify_result);
+        return 0;
+    }
+    
+    GENERAL_NAMES *subjectAltNames = X509_get_ext_d2i (cert, NID_subject_alt_name, NULL, NULL);
+
+    if (subjectAltNames) {
+        if (!verify_alt_names(ssl, subjectAltNames)) {
+            return 0;
+        }
+    }
+    
+    if (!verify_common_name(ssl, cert)) {
+        return 0;
     }
     
     free(subj);
     free(issuer);
-    
-    if (cfg_get_bit(cfg, ALLOW_ALL_CERTS_FLAG))
-        return 1;
-    else
-        return preverify_ok;
+
+    return 1;
 }
 
 #endif
