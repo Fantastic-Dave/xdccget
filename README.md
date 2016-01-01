@@ -3,6 +3,15 @@ This is a project that allows you to download files from IRC with XDCC with an e
 like wget or curl. It supports at the moment Linux, Windows (with cygwin) and BSD-variants. Also OSX with some installed
 ports works.
 
+## Quick facts
+* it is free software licenced under the GPL
+* minimal usage of cpu and memory
+* runs under Linux, BSDs, MacOSX and Windows (see notes for compiling below)
+* support for IPv4 and IPv6 connections
+* can be configured with configuration-file
+* supports connection with and without SSL/TLS
+* bots with support for ssend-command are supported
+
 ## Using xdccget
 In order to use xdccget properly i will provide some simple examples. You should be able to extract 
 the options for your personal usage quite quickly, i guess:
