@@ -67,9 +67,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         break;
 
 #ifdef ENABLE_IPV6
-	case '6':
-		cfg_set_bit(cfg, USE_IPV6_FLAG);
-		break;
+    case '6':
+        cfg_set_bit(cfg, USE_IPV6_FLAG);
+        break;
 #endif
 
     case ARGP_KEY_ARG:

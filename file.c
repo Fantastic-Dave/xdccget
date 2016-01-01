@@ -20,7 +20,7 @@ file_io_t* Open(const char *pathname, char *mode) {
         fd->fd = fopen(pathname, "ab");
     }
     else if (str_equals(mode, "r")) {
-	    fd->fd = fopen(pathname, "rb");
+        fd->fd = fopen(pathname, "rb");
     }
     
     if (fd->fd == NULL) {
