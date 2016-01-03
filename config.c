@@ -21,7 +21,7 @@ static struct ConfigLineParser configLineCallbacks[] = {
 
 static void allowAllCertsCallback(struct xdccGetConfig *config, sds value) {
      if (str_equals(value, "true")) {
-		cfg_set_bit(config, ALLOW_ALL_CERTS_FLAG);
+        cfg_set_bit(config, ALLOW_ALL_CERTS_FLAG);
      }
      else {
         cfg_clear_bit(config, ALLOW_ALL_CERTS_FLAG);
