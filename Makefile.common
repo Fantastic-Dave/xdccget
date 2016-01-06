@@ -1,0 +1,18 @@
+#CC=gcc
+CFLAGS =-std=gnu11 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -I libircclient-include/
+#CFLAGS += -DDEBUG
+LIBS = -lssl -lcrypto -lpthread
+PROG = xdccget
+
+SRCS = xdccget.c config.c helper.c argument_parser.c libircclient-src/libircclient.c sds.c dirs.c file.c hashing_algo.c sph_md5.c
+
+all: build
+
+build: $(SRCS)
+	$(CC) $(CFLAGS) -o $(PROG) $(SRCS) $(OBJ_FILES) $(LIBS)
+
+install:
+	cp ./$(PROG) /usr/bin/
+
+clean:
+	rm -f $(PROG)
