@@ -573,11 +573,12 @@ static inline bool isValidRequestFromNick(struct dccDownload **dccDownloads, cha
 }
 
 static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *result, const char * req) {
-    char filenamebuf[LIBIRC_BUFFER_SIZE];
+    char filenamebuf[LIBIRC_BUFFER_SIZE+1];
     unsigned long ip;
     irc_dcc_size_t size;
     unsigned short port;
-
+    
+    filenamebuf[LIBIRC_BUFFER_SIZE] = (char) 0;
     DBG_OK("---- got dcc req: %s ---", req);
 
     if (!isValidRequestFromNick(getCfg()->dccDownloadArray, result->nick)) {
@@ -585,16 +586,16 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
         return;
     }
     
-    if (sscanf(req, "DCC SEND %s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
+    if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
         accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 0);
         return;
-    } else if (sscanf(req, "DCC SEND %s %lu %hu", filenamebuf, &ip, &port) == 3) {
+    } else if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu", filenamebuf, &ip, &port) == 3) {
         size = 0;
         accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 0);
         return;
     }
 #if defined (ENABLE_SSL)
-    else if (sscanf(req, "DCC SSEND %s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
+    else if (sscanf(req, "DCC SSEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
         accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 1);
         return;
     }

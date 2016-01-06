@@ -20,6 +20,7 @@
 #define LIBIRC_VERSION_LOW			6
 
 #define LIBIRC_BUFFER_SIZE			2048
+#define LIBIRC_BUFFER_SIZE_STR                  "2048"
 
 #define LIBIRC_DCC_BUFFER_SIZE      BUFSIZ
 /*#define LIBIRC_DCC_BUFFER_SIZE    0x8000  // 32768 bytes*/
