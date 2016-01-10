@@ -485,7 +485,9 @@ int main (int argc, char **argv)
 
     logprintf(LOG_INFO, "nick is %s\n", nick);
 
+#ifdef ENABLE_SSL
     irc_set_cert_verify_callback(cfg.session, openssl_check_certificate_callback);
+#endif
 
     if (cfg_get_bit(&cfg, USE_IPV6_FLAG) == 0) {
         ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);

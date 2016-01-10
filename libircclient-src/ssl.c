@@ -58,6 +58,7 @@ static int alloc_mutexes(unsigned int total) {
 
 #endif
 
+#ifdef ENABLE_SSL
 int isSslIntitialized() {
     return ssl_context != NULL;
 }
@@ -235,6 +236,8 @@ static int ssl_send(irc_session_t * session) {
 
     return -1;
 }
+
+#endif
 
 
 // Handles both SSL and non-SSL reads.

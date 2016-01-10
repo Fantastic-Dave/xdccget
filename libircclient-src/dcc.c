@@ -43,24 +43,32 @@ static irc_dcc_session_t * libirc_find_dcc_session(irc_session_t * session, irc_
     return found;
 }
 
-static void libirc_dcc_destroy_nolock(irc_session_t * session, irc_dcc_t dccid) {
+static void libirc_dcc_destroy_nolock(irc_session_t * session, irc_dcc_t dccid)
+{
     irc_dcc_session_t * dcc = libirc_find_dcc_session(session, dccid, 0);
 
-    if (dcc) {
-        
-        if (dcc->ssl) {
-            SSL_free(dcc->ssl_ctx);
-        }
-        
-        if (dcc->sock >= 0)
-            socket_close(&dcc->sock);
-
-        dcc->state = LIBIRC_STATE_REMOVED;
+    if (dcc == NULL) {
+        return;
     }
+
+#ifdef ENABLE_SSL
+    if (dcc->ssl) {
+        SSL_free(dcc->ssl_ctx);
+    }
+#endif
+
+    if (dcc->sock >= 0) {
+        socket_close(&dcc->sock);
+    }
+
+    dcc->state = LIBIRC_STATE_REMOVED;
 }
 
 static inline int ssl_read_wrapper(irc_session_t *session, irc_dcc_session_t *dcc, void *buf, int num, int *sslError) {
+#ifdef ENABLE_SSL
     int length;
+    
+    *sslError = SSL_ERROR_NONE;
 
     length = SSL_read(dcc->ssl_ctx, buf, num);
 
@@ -80,11 +88,16 @@ static inline int ssl_read_wrapper(irc_session_t *session, irc_dcc_session_t *dc
     }
 
     return length;
-
+#else
+    return -1;
+#endif
 }
 
 static inline int ssl_write_wrapper(irc_session_t *session, irc_dcc_session_t *dcc, void *buf, int num, int *sslError) {
+#ifdef ENABLE_SSL
     int length;
+    
+    *sslError = SSL_ERROR_NONE;
 
     length = SSL_write(dcc->ssl_ctx, buf, num);
 
@@ -104,6 +117,9 @@ static inline int ssl_write_wrapper(irc_session_t *session, irc_dcc_session_t *d
     }
 
     return length;
+#else
+    return -1;
+#endif
 }
 
 static inline int hasSocketPendingData (irc_dcc_session_t *dcc) {
@@ -121,10 +137,11 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
     size_t amount = LIBIRC_DCC_BUFFER_SIZE;
 
     do {
+#ifdef ENABLE_SSL
         if (dcc->ssl == 0)
             rcvdBytes = socket_recv(&dcc->sock, dcc->incoming_buf, amount);
         else {
-            int sslError = SSL_ERROR_NONE;
+            int sslError = 0;
             rcvdBytes = ssl_read_wrapper(ircsession, dcc, dcc->incoming_buf, amount, &sslError);
 
             if (sslError == SSL_ERROR_WANT_READ) {
@@ -135,6 +152,9 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
                 return;
             }
         }
+#else
+        rcvdBytes = socket_recv(&dcc->sock, dcc->incoming_buf, amount);
+#endif
 
         if (rcvdBytes < 0) {
             err = LIBIRC_ERR_READ;
@@ -174,10 +194,11 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
     uint32_t confirmSizeNetworkOrder = htobe32(dcc->file_confirm_offset);
     size_t offset = sizeof(confirmSizeNetworkOrder);
 
+#ifdef ENABLE_SSL
     if (dcc->ssl == 0)
         sentBytes = socket_send(&dcc->sock, &confirmSizeNetworkOrder, offset);
     else {
-        int sslError = SSL_ERROR_NONE;
+        int sslError = 0;
         sentBytes = ssl_write_wrapper(session, dcc, &confirmSizeNetworkOrder, offset, &sslError);
 
         if (sslError == SSL_ERROR_WANT_READ) {
@@ -188,6 +209,9 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
             return;
         }
     }
+#else
+    sentBytes = socket_send(&dcc->sock, &confirmSizeNetworkOrder, offset);
+#endif
     if (sentBytes < 0) {
         DBG_WARN("err send length < 0");
         DBG_WARN("error msg: %s\n", strerror(errno));
@@ -417,10 +441,9 @@ static int libirc_new_dcc_session(irc_session_t * session, unsigned long ip, uns
         goto cleanup_exit_error;
 
     //optimizeSocketBufferSize(dcc);
-
-    dcc->ssl = 0;
-
+    
 #if defined (ENABLE_SSL)
+    dcc->ssl = 0;
     if (ssl) {
         dcc->ssl = 1;
         if (!isSslIntitialized()) {
@@ -613,7 +636,8 @@ int irc_dcc_accept(irc_session_t * session, irc_dcc_t dccid, void * ctx, irc_dcc
         session->lasterror = LIBIRC_ERR_CONNECT;
         return 1;
     }
-
+    
+#ifdef ENABLE_SSL
     if (dcc->ssl == 1) {
         DBG_OK("using ssl!");
 
@@ -637,13 +661,16 @@ int irc_dcc_accept(irc_session_t * session, irc_dcc_t dccid, void * ctx, irc_dcc
         ciphers_used = SSL_get_cipher_name(dcc->ssl_ctx);
         logprintf(LOG_INFO, "using cipher suite: %s for dcc connection", ciphers_used);
     }
+#endif
 
     DBG_OK("connect succeded2!");
 
     dcc->state = LIBIRC_STATE_CONNECTING;
+#ifdef ENABLE_SSL
     if (dcc->ssl) {
         dcc->state = LIBIRC_STATE_CONNECTED;
     }
+#endif
     libirc_mutex_unlock(&session->mutex_dcc);
     return 0;
 }

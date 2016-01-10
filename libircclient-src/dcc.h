@@ -15,35 +15,36 @@
 #ifndef INCLUDE_IRC_DCC_H
 #define INCLUDE_IRC_DCC_H
 
-
 /*
  * This structure keeps the state of a single DCC connection.
  */
-struct irc_dcc_session_s
-{
-	irc_dcc_session_t	*	next;
+struct irc_dcc_session_s {
+    irc_dcc_session_t * next;
 
-	irc_dcc_t		id;
-	void		*	ctx;
-	socket_t		sock;		/*!< DCC socket */
+    irc_dcc_t id;
+    void * ctx;
+    socket_t sock; /*!< DCC socket */
 
-	int				state;
-	int 			ssl;
-	SSL 			*ssl_ctx;
-	time_t			timeout;
+    int state;
 
-	FILE		*	dccsend_file_fp;
-	irc_dcc_size_t	received_file_size;
-	irc_dcc_size_t	file_confirm_offset;
+#ifdef ENABLE_SSL
+    int ssl;
+    SSL *ssl_ctx;
+#endif
+    time_t timeout;
 
-	struct sockaddr_in	remote_addr;
+    FILE * dccsend_file_fp;
+    irc_dcc_size_t received_file_size;
+    irc_dcc_size_t file_confirm_offset;
 
-	char 			incoming_buf[LIBIRC_DCC_BUFFER_SIZE];
-	unsigned int	incoming_offset;
+    struct sockaddr_in remote_addr;
 
-	port_mutex_t	mutex_outbuf;
+    char incoming_buf[LIBIRC_DCC_BUFFER_SIZE];
+    unsigned int incoming_offset;
 
-	irc_dcc_callback_t		cb;
+    port_mutex_t mutex_outbuf;
+
+    irc_dcc_callback_t cb;
 };
 
 
