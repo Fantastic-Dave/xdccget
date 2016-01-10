@@ -43,39 +43,12 @@ static irc_dcc_session_t * libirc_find_dcc_session(irc_session_t * session, irc_
     return found;
 }
 
-#if 0
-static void shutdownSSL(irc_dcc_session_t *dcc) {
-    while (1) {
-        int ret = SSL_shutdown(dcc->ssl_ctx);
-
-        if (ret == 1) {
-            break;
-        }
-
-        if (ret == 0) {
-            continue;
-        }
-        else if (ret < 0) {
-            int sslErr =  SSL_get_error(dcc->ssl_ctx, ret);
-            if (sslErr == SSL_ERROR_WANT_READ || sslErr == SSL_ERROR_WANT_WRITE) {
-                continue;
-            }
-            else {
-                DBG_WARN("error at ssl shutdown: %s", ERR_error_string(sslErr, NULL));
-                break;
-            }
-        }
-    }
-}
-#endif
-
 static void libirc_dcc_destroy_nolock(irc_session_t * session, irc_dcc_t dccid) {
     irc_dcc_session_t * dcc = libirc_find_dcc_session(session, dccid, 0);
 
     if (dcc) {
         
         if (dcc->ssl) {
-            //shutdownSSL(dcc);
             SSL_free(dcc->ssl_ctx);
         }
         
@@ -245,22 +218,6 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
 
         //libirc_dcc_destroy_nolock (ircsession, dcc->id);
     }
-}
-
-char *stripNickname(const char *nickname) {
-    int i = 0;
-    int nickEndPosition = 0;
-    for (i = 0; nickname[i]; i++) {
-        if (nickname[i] == '!') nickEndPosition = i;
-    }
-
-    if (nickEndPosition <= 0) return (char*) nickname;
-
-    char *strippedNick = (char*) malloc(sizeof (char) * (nickEndPosition + 1));
-    memset(strippedNick, 0, nickEndPosition + 1);
-
-    strncpy(strippedNick, nickname, nickEndPosition);
-    return strippedNick;
 }
 
 static irc_dcc_session_t * libirc_find_dcc_session_by_port(irc_session_t * session, unsigned short port, int lock_list) {
@@ -675,6 +632,10 @@ int irc_dcc_accept(irc_session_t * session, irc_dcc_t dccid, void * ctx, irc_dcc
             DBG_OK("ssl_connect succeded!");
             break;
         }
+        
+        const char *ciphers_used = "None";
+        ciphers_used = SSL_get_cipher_name(dcc->ssl_ctx);
+        logprintf(LOG_INFO, "using cipher suite: %s for dcc connection", ciphers_used);
     }
 
     DBG_OK("connect succeded2!");
