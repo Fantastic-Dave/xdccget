@@ -17,6 +17,11 @@
 
 #include <pthread.h>
 #include <openssl/ssl.h>
+#include <openssl/x509.h>
+
+#ifndef X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS
+# define X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS 0
+#endif
 
 #include "session.h"
 
