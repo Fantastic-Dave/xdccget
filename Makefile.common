@@ -1,5 +1,6 @@
 #CC=gcc
-CFLAGS =-std=gnu11 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -I libircclient-include/
+CFLAGS =-std=gnu11 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -fstack-protector -I libircclient-include/
+#CFLAGS += -DHOSTNAME_VALIDATION
 #CFLAGS += -DDEBUG
 LIBS = -lssl -lcrypto -lpthread
 PROG = xdccget
