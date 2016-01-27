@@ -141,6 +141,13 @@ static int ssl_init(irc_session_t * session) {
     // Since we're connecting on our own, tell openssl about it
     SSL_set_connect_state(session->ssl);
 
+#ifdef HOSTNAME_VALIDATION
+    // enable automatic check for hostname validation
+    X509_VERIFY_PARAM *param = SSL_get0_param(session->ssl);
+    X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    X509_VERIFY_PARAM_set1_host(param, session->server, 0);
+#endif
+
     return 0;
 }
 
