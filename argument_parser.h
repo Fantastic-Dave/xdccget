@@ -10,7 +10,6 @@ struct dccDownload {
 };
 
 struct dccDownloadProgress {
-    unsigned long key;
     irc_dcc_size_t completeFileSize;
     irc_dcc_size_t sizeRcvd;
     irc_dcc_size_t sizeNow;

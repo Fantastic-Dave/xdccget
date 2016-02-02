@@ -73,27 +73,27 @@ do {\
 #define bitset_t uint64_t
 
 struct xdccGetConfig {
-	int logLevel;
-	char *ircServer;
-	unsigned short port;
-	int numChannels;
-	sds *channelsToJoin;
-	unsigned int numDownloads;
-	struct dccDownload **dccDownloadArray;
-	bool sended;
-	irc_session_t *session;
-	sds targetDir;
-	char *args[3];
+    int logLevel;
+    char *ircServer;
+    unsigned short port;
+    int numChannels;
+    sds *channelsToJoin;
+    unsigned int numDownloads;
+    struct dccDownload **dccDownloadArray;
+    bool sended;
+    irc_session_t *session;
+    sds targetDir;
+    char *args[3];
     bitset_t flags;
 };
 
 #define OUTPUT_FLAG             0x01
 #define ALLOW_ALL_CERTS_FLAG    0x02
-#define USE_IPV6_FLAG			0x03
+#define USE_IPV6_FLAG   0x03
 
 struct terminalDimension {
-	int rows;
-	int cols;
+    int rows;
+    int cols;
 };
 
 struct checksumThreadData {
@@ -102,8 +102,8 @@ struct checksumThreadData {
 };
 
 struct dccDownloadContext {
-	struct dccDownloadProgress *progress;
-	struct file_io_t *fd;
+    struct dccDownloadProgress *progress;
+    struct file_io_t *fd;
 };
 
 void cfg_clear_bit(struct xdccGetConfig *config, int bitNum);

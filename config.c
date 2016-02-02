@@ -51,26 +51,26 @@ static void parseLogLevel(struct xdccGetConfig *config, sds logLevel) {
 static sds getDefaultConfigContent() {
     sds downloadDir = sdscatprintf(sdsempty(), "%s%s%s", getHomeDir(), getPathSeperator(), "Downloads");
 
-    sds defaultConfigContent = sdscatprintf(sdsempty(), "downloadDir=%s\n", downloadDir);
-    defaultConfigContent = sdscatprintf(defaultConfigContent, "logLevel=information\n");
-    defaultConfigContent = sdscatprintf(defaultConfigContent, "allowAllCerts=true\n");
+    sds content = sdscatprintf(sdsempty(), "downloadDir=%s\n", downloadDir);
+    content = sdscatprintf(content, "logLevel=information\n");
+    content = sdscatprintf(content, "allowAllCerts=true\n");
 
     sdsfree(downloadDir);
 
-    return defaultConfigContent;
+    return content;
 }
 
 static void writeDefaultConfigFile() {
     sds configDir = getConfigDirectory();
     sds configPath = sdscatprintf(sdsempty(), "%s%s", configDir, "config");
 
-    sds defaultConfigContent = getDefaultConfigContent();
+    sds content = getDefaultConfigContent();
 
     file_io_t *configFile = Open(configPath, "w");
-    Write(configFile, defaultConfigContent, sdslen(defaultConfigContent));
+    Write(configFile, content, sdslen(content));
     Close(configFile);
 
-    sdsfree(defaultConfigContent);
+    sdsfree(content);
 
     sdsfree(configPath);
     sdsfree(configDir);

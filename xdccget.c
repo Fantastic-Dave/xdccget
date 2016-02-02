@@ -360,7 +360,6 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
     
     struct dccDownloadProgress *progress = newDccProgress(completePath, size);
     curDownload = progress;
-    progress->key = dccid;
 
     struct dccDownloadContext *context = Malloc(sizeof(struct dccDownloadContext));
     downloadContext[downloadNumber] = context;
