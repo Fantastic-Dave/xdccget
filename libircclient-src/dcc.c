@@ -21,6 +21,9 @@
 #include "irc_line_parser.h"
 #include "session.h"
 
+#define NO_SSL     0
+#define USE_SSL    1
+
 static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_session_t *dcc);
 static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc);
 
@@ -441,7 +444,7 @@ static int libirc_new_dcc_session(irc_session_t * session, unsigned long ip, uns
         goto cleanup_exit_error;
 
     //optimizeSocketBufferSize(dcc);
-    
+ 
 #if defined (ENABLE_SSL)
     dcc->ssl = 0;
     if (ssl) {
@@ -518,7 +521,7 @@ static void accept_dcc_send(irc_session_t * session, const char * nick, const ch
     DBG_OK("---- got dcc send req: %s ---", req);
     if (session->callbacks.event_dcc_send_req) {
         irc_dcc_session_t * dcc;
-
+        
         int err = libirc_new_dcc_session(session, ip, port, 0, &dcc, ssl);
         if (err) {
             session->lasterror = err;
@@ -534,6 +537,11 @@ static void accept_dcc_send(irc_session_t * session, const char * nick, const ch
 
         dcc->received_file_size = size;
     }
+}
+
+static void accept_reverse_dcc_send(irc_session_t * session, const char * nick, const char * req, char *filename, unsigned long ip, irc_dcc_size_t size, unsigned long token, int ssl) {
+    logprintf(LOG_WARN, "got a reverse dcc send request for file %s!", filename);
+    logprintf(LOG_WARN, "xdccget does not support reverse dcc send requests yet!", filename);
 }
 
 static inline bool isValidRequestFromNick(struct dccDownload **dccDownloads, char *botNick) {
@@ -555,6 +563,7 @@ static inline bool isValidRequestFromNick(struct dccDownload **dccDownloads, cha
 static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *result, const char * req) {
     char filenamebuf[LIBIRC_BUFFER_SIZE+1];
     unsigned long ip;
+    unsigned long token;
     irc_dcc_size_t size;
     unsigned short port;
     
@@ -565,18 +574,23 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
         DBG_WARN("received unknown dcc req from nick %s. ignoring that request!", result->nick);
         return;
     }
-    
+   
+    if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu 0 %" IRC_DCC_SIZE_T_FORMAT" %lu", filenamebuf, &ip, &size,
+      &token) == 4) {
+        accept_reverse_dcc_send(session, result->nick, req, filenamebuf, ip, size, token, NO_SSL);
+        return;
+    }
     if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
-        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 0);
+        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, NO_SSL);
         return;
     } else if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu", filenamebuf, &ip, &port) == 3) {
         size = 0;
-        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 0);
+        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, NO_SSL);
         return;
     }
 #if defined (ENABLE_SSL)
     else if (sscanf(req, "DCC SSEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
-        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, 1);
+        accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, USE_SSL);
         return;
     }
 #endif
