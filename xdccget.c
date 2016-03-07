@@ -488,14 +488,17 @@ int main (int argc, char **argv)
     irc_set_cert_verify_callback(cfg.session, openssl_check_certificate_callback);
 #endif
 
-    if (cfg_get_bit(&cfg, USE_IPV6_FLAG) == 0) {
-        ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
+    if (cfg_get_bit(&cfg, USE_IPV4_FLAG)) {
+        ret = irc_connect4(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
     }
 #ifdef ENABLE_IPV6
-    else {
+    else if (cfg_get_bit(&cfg, USE_IPV6_FLAG)) {
         ret = irc_connect6(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
     }
 #endif	
+    else {
+        ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
+    }
 
     if (ret != 0) {
         logprintf(LOG_ERR, "Could not connect to server %s and port %u.\nError was: %s\n", cfg.ircServer, cfg.port, irc_strerror(irc_errno(cfg.session)));

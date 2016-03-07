@@ -35,8 +35,11 @@ typedef int socket_t;
 #endif
 
 struct irc_addr_t {
-	int length;
-	char *value;
+	int family;
+	int socktype;
+	int protocol;
+	socklen_t length;
+	struct sockaddr *addr;
 };
 static int socket_error() {
 
@@ -104,18 +107,44 @@ static int socket_send(socket_t * sock, const void *buf, size_t len) {
     return length;
 }
 
-static struct irc_addr_t** resolve_hostname_by_dns(char *hostname, int *numAddrs, int addressFamily) {
-    struct hostent *hp;
+static inline void init_irc_addr(struct irc_addr_t *t, struct addrinfo *addr)
+{
+    t->length = addr->ai_addrlen;
+    t->family = addr->ai_family;
+    t->protocol = addr->ai_protocol;
+    t->socktype = addr->ai_socktype;
+
+    if (addr->ai_family == AF_INET) {
+        t->addr = malloc(sizeof (struct sockaddr_in));
+    }
+    else if (addr->ai_family == AF_INET6) {
+        t->addr = malloc(sizeof (struct sockaddr_in6));
+    }
+
+    memcpy(t->addr, addr->ai_addr, addr->ai_addrlen);
+}
+
+static struct irc_addr_t** resolve_hostname_by_dns(const char *hostname, int *numAddrs, int addressFamily)
+{
+    struct addrinfo hints;
+    struct addrinfo *result;
+    int ret;
     int numAddresses = 0;
     *numAddrs = 0;
 
-    hp = gethostbyname2(hostname, addressFamily);
+    memset(&hints, 0, sizeof (struct addrinfo));
+    hints.ai_family = addressFamily; /* AF_UNSPEC for Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = 0;
+    hints.ai_protocol = IPPROTO_TCP;
 
-    if (hp == NULL) {
+    ret = getaddrinfo(hostname, NULL, &hints, &result);
+
+    if (ret != 0) {
         return NULL;
     }
 
-    while (hp -> h_addr_list[numAddresses] != NULL) {
+    for (struct addrinfo *rp = result; rp != NULL; rp = rp->ai_next) {
         numAddresses++;
     }
 
@@ -129,16 +158,13 @@ static struct irc_addr_t** resolve_hostname_by_dns(char *hostname, int *numAddrs
 
     unsigned int currentAddress = 0;
 
-    for (currentAddress = 0; currentAddress < numAddresses; currentAddress++) {
-        char *curAddr = hp->h_addr_list[currentAddress];
-
+    for (struct addrinfo *addr = result; addr != NULL; addr = addr->ai_next, currentAddress++) {
         addresses[currentAddress] = (struct irc_addr_t*) malloc(sizeof (struct irc_addr_t));
-        addresses[currentAddress]->length = hp->h_length;
-        addresses[currentAddress]->value = malloc(sizeof (char) * hp->h_length);
-        memcpy(addresses[currentAddress]->value, curAddr, hp->h_length);
+        init_irc_addr(addresses[currentAddress], addr);
     }
 
     *numAddrs = numAddresses;
+    freeaddrinfo(result);
 
     return addresses;
 }
@@ -148,7 +174,7 @@ static void free_addresses(struct irc_addr_t **addresses) {
 
     for (currentAddress = 0; addresses[currentAddress] != NULL; currentAddress++) {
         struct irc_addr_t *address = addresses[currentAddress];
-        free(address->value);
+        free(address->addr);
         free(address);
     }
 

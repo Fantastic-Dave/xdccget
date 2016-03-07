@@ -21,8 +21,9 @@ static struct argp_option options[] = {
 {"verbose",  'v', 0,      0,  "Produce verbose output" },
 {"quiet",    'q', 0,      0,  "Don't produce any output" },
 {"information",   'i', 0,      0,  "Produce information output." },
+{"ipv4",   '4', 0,      0,  "Use ipv4 to connect to irc server." },
 #ifdef ENABLE_IPV6
-{"ipv6",   '6', 0,      0,  "Use ipv6 instead of ipv4 to connect to irc server." },
+{"ipv6",   '6', 0,      0,  "Use ipv6 to connect to irc server." },
 #endif
 {"port",   'p', "<port number>",      0,  "Use the following port to connect to server. default is 6667." },
 {"directory",   'd', "<download-directory>",      0,  "Directory, where to place the files." },
@@ -64,6 +65,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     case 'p':
         cfg->port = (unsigned short) strtoul(arg, NULL, 0);
         DBG_OK("setting port as %u", cfg->port);
+        break;
+    case '4':
+        cfg_set_bit(cfg, USE_IPV4_FLAG);
         break;
 
 #ifdef ENABLE_IPV6

@@ -165,27 +165,23 @@ int init_socket(irc_session_t *session, int addressFamily) {// create the IRC se
 }
 
 static int try_to_connect_ipv4(irc_session_t *session, struct irc_addr_t *address, unsigned short port) {
-    struct sockaddr_in saddr;
+    struct sockaddr_in *saddr = (struct sockaddr_in*) address->addr;
     char ip4buf[INET_ADDRSTRLEN];
     int ret;
 
-    memset(&saddr, 0, sizeof (saddr));
-    saddr.sin_family = AF_INET;
-    saddr.sin_port = htons(port);
+    saddr->sin_port = htons(port);
 
-    memcpy(&saddr.sin_addr, address->value, (size_t) address->length);
-
-    inet_ntop(AF_INET, address->value, ip4buf, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &saddr->sin_addr, ip4buf, INET_ADDRSTRLEN);
     logprintf(LOG_INFO, "connecting to ip %s!", ip4buf);
 
-    ret = init_socket(session, AF_INET);
+    ret = init_socket(session, address->family);
 
     if (ret != 0) {
         session->lasterror = LIBIRC_ERR_SOCKET;
         return -1;
     }
 
-    ret = socket_connect(&session->sock, (struct sockaddr *) &saddr, sizeof (saddr));
+    ret = socket_connect(&session->sock, (struct sockaddr *) saddr, address->length);
 
     if (ret != 0) {
         session->lasterror = LIBIRC_ERR_SOCKET;
@@ -198,27 +194,23 @@ static int try_to_connect_ipv4(irc_session_t *session, struct irc_addr_t *addres
 #if defined (ENABLE_IPV6)
 
 static int try_to_connect_ipv6(irc_session_t *session, struct irc_addr_t *address, unsigned short port) {
-    struct sockaddr_in6 saddr;
+    struct sockaddr_in6 *saddr = (struct sockaddr_in6*) address->addr;
     char ip6buf[INET6_ADDRSTRLEN];
     int ret;
+    
+    saddr->sin6_port = htons(port);
 
-    memset(&saddr, 0, sizeof (saddr));
-    saddr.sin6_family = AF_INET6;
-    saddr.sin6_port = htons(port);
-
-    memcpy(&saddr.sin6_addr, address->value, (size_t) address->length);
-
-    inet_ntop(AF_INET6, address->value, ip6buf, INET6_ADDRSTRLEN);
+    inet_ntop(AF_INET6, &saddr->sin6_addr, ip6buf, INET6_ADDRSTRLEN);
     logprintf(LOG_INFO, "connecting to ip %s!", ip6buf);
 
-    ret = init_socket(session, AF_INET6);
+    ret = init_socket(session, address->family);
 
     if (ret != 0) {
         session->lasterror = LIBIRC_ERR_SOCKET;
         return -1;
     }
 
-    ret = socket_connect(&session->sock, (struct sockaddr *) &saddr, sizeof (saddr));
+    ret = socket_connect(&session->sock, (struct sockaddr *) saddr, address->length);
 
     if (ret != 0) {
         session->lasterror = LIBIRC_ERR_SOCKET;
@@ -289,10 +281,10 @@ int irc_connect_generic(irc_session_t * session,
         struct irc_addr_t *currentAddress = addresses[selectedAddress];
         int ret = -1;
 
-        if (protocol_family == AF_INET)
+        if (currentAddress->family == AF_INET)
             ret = try_to_connect_ipv4(session, currentAddress, port);
 #if defined (ENABLE_IPV6)
-        else if (protocol_family == AF_INET6)
+        else if (currentAddress->family == AF_INET6)
             ret = try_to_connect_ipv6(session, currentAddress, port);
 #endif
 
@@ -328,6 +320,17 @@ err_out:
 }
 
 int irc_connect (irc_session_t * session,
+			const char * server,
+			unsigned short port,
+			const char * server_password,
+			const char * nick,
+			const char * username,
+			const char * realname)
+{
+	return irc_connect_generic(session, server, port, server_password, nick, username, realname, AF_UNSPEC);
+}
+
+int irc_connect4 (irc_session_t * session,
 			const char * server,
 			unsigned short port,
 			const char * server_password,
