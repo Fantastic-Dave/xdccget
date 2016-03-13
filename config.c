@@ -5,6 +5,7 @@
 static void downloadDirCallback(struct xdccGetConfig *config, sds value);
 static void parseLogLevel(struct xdccGetConfig *config, sds value);
 static void allowAllCertsCallback(struct xdccGetConfig *config, sds value);
+static void verifyChecksumsCallback (struct xdccGetConfig *config, sds value);
 
 typedef void (*ConfigLineParserFunction) (struct xdccGetConfig *config, sds value);
 
@@ -17,7 +18,17 @@ static struct ConfigLineParser configLineCallbacks[] = {
     {"downloadDir",     downloadDirCallback},
     {"logLevel",        parseLogLevel},
     {"allowAllCerts",   allowAllCertsCallback},
+    {"verifyChecksums", verifyChecksumsCallback},
 };
+
+static void verifyChecksumsCallback (struct xdccGetConfig *config, sds value) {
+    if (str_equals(value, "true")) {
+        cfg_set_bit(config, VERIFY_CHECKSUM_FLAG);
+    }
+    else {
+        cfg_clear_bit(config, VERIFY_CHECKSUM_FLAG);
+    }
+}
 
 static void allowAllCertsCallback(struct xdccGetConfig *config, sds value) {
      if (str_equals(value, "true")) {

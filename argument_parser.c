@@ -20,7 +20,8 @@ static char args_doc[] = "<server> <channel(s)> <bot cmds>";
 static struct argp_option options[] = {
 {"verbose",  'v', 0,      0,  "Produce verbose output" },
 {"quiet",    'q', 0,      0,  "Don't produce any output" },
-{"information",   'i', 0,      0,  "Produce information output." },
+{"information",    'i', 0,      0,  "Produce information output." },
+{"checksum-verify", 'c', 0,      0,  "Stay connected after download completed to verify checksums." },
 #ifdef ENABLE_IPV6
 {"ipv6",   '6', 0,      0,  "Use ipv6 instead of ipv4 to connect to irc server." },
 #endif
@@ -54,6 +55,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     case 'i':
         DBG_OK("setting log-level as info.");
         cfg->logLevel = LOG_INFO;
+        break;
+        
+    case 'c':
+        DBG_OK("setting verify checksum option.");
+        cfg_set_bit(cfg, VERIFY_CHECKSUM_FLAG);
         break;
 
     case 'd':

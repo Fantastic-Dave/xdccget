@@ -20,6 +20,7 @@
 static struct xdccGetConfig cfg;
 
 unsigned int downloadNumber = 0;
+unsigned int finishedDownloads = 0;
 struct dccDownloadContext **downloadContext = NULL;
 struct dccDownloadProgress *lastDownload = NULL;
 struct dccDownloadProgress *curDownload = NULL;
@@ -311,6 +312,14 @@ void callback_dcc_recv_file(irc_session_t * session, irc_dcc_t id, int status, v
 
         Close(context->fd);
         context->fd = NULL;
+        
+        finishedDownloads++;
+        
+        if (!(cfg_get_bit(&cfg, VERIFY_CHECKSUM_FLAG))) {
+            if (finishedDownloads == downloadNumber) {
+                irc_cmd_quit(cfg.session, "Goodbye!");
+            }
+        }
     }
 }
 

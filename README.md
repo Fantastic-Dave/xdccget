@@ -94,4 +94,7 @@ You can configure some options with the config file. It is placed in the folder 
 downloadDir - this defines the default directory used to store the downloaded files
 logLevel - this defines the default logging level. valid options are info, warn and error
 allowAllCerts - this options will allow silently all self signed certificates if set to true
+verifyChecksums - this option will automatically wait after the download completed to verify checksums. 
+                  please note that if set to true xdccget does not exit after the download finished and 
+                  you have to manually exit xdccget.
 ```
