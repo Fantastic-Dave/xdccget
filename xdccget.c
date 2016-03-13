@@ -61,6 +61,8 @@ void doCleanUp() {
     }
 
     sdsfree(cfg.targetDir);
+    sdsfree(cfg.nick);
+    sdsfree(cfg.login_command);
     FREE(cfg.dccDownloadArray);
     FREE(cfg.channelsToJoin);
     FREE(downloadContext);
@@ -210,17 +212,21 @@ void dump_event (irc_session_t * session, const char * event, irc_parser_result_
     sdsfree(param_string);
 }
 
-
-void event_join (irc_session_t * session, const char * event, irc_parser_result_t *result)
-{
+static void join_channels(irc_session_t *session) {
     int i;
-    irc_cmd_user_mode (session, "+i");
+    for (i = 0; i < cfg.numChannels; i++) {
+        logprintf(LOG_INFO, "joining %s\n", cfg.channelsToJoin[i]);
+        irc_cmd_join (session, cfg.channelsToJoin[i], 0);
+    }
+}
 
+static void send_xdcc_requests(irc_session_t *session) {
+    int i;
     if (!cfg.sended) {
         for (i = 0; cfg.dccDownloadArray[i] != NULL; i++) {
             char *botNick = cfg.dccDownloadArray[i]->botNick;
             char *xdccCommand = cfg.dccDownloadArray[i]->xdccCmd;
-            
+
             logprintf(LOG_INFO, "/msg %s %s\n", botNick, xdccCommand);
             bool cmdSendingFailed = irc_cmd_msg(session, botNick, xdccCommand) == 1;
 
@@ -230,7 +236,39 @@ void event_join (irc_session_t * session, const char * event, irc_parser_result_
         }
 
         cfg.sended = true;
-    }	
+    }
+}
+
+void event_mode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
+    dump_event(session, event, result);
+    
+    if (cfg.login_command != NULL && result->num_params == 3) {
+        send_xdcc_requests(session);
+    }
+    
+}
+
+void event_umode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
+    dump_event(session, event, result);
+    
+    if (cfg.login_command != NULL) {
+        if (str_equals(event, "MODE") && result->num_params == 1) {
+            if (str_equals(result->params[0], "+r")) {
+                join_channels(session);
+            }
+        }
+    }
+}
+
+
+void event_join (irc_session_t * session, const char * event, irc_parser_result_t *result)
+{
+    
+    irc_cmd_user_mode (session, "+i");
+
+    if (cfg.login_command == NULL) {
+        send_xdcc_requests(session);
+    }
 }
 
 
@@ -241,11 +279,32 @@ void event_connect (irc_session_t *session, const char * event, irc_parser_resul
 #ifdef ENABLE_SSL
     logprintf(LOG_INFO, "using cipher suite: %s", irc_get_ssl_ciphers_used(session));
 #endif
+    
+    if (cfg.login_command != NULL) {
+        cfg.login_command = sdstrim(cfg.login_command, " \t");
+        if (sdslen(cfg.login_command) >= 9) {
+            sds user = sdsdup(cfg.login_command);
+            sds auth_command = sdsdup(cfg.login_command);
+            sdsrange(user, 0, 8);
+            sdsrange(auth_command, 9, sdslen(auth_command));
 
-    int i;
-    for (i = 0; i < cfg.numChannels; i++) {
-        logprintf(LOG_INFO, "joining %s\n", cfg.channelsToJoin[i]);
-        irc_cmd_join (session, cfg.channelsToJoin[i], 0);
+            logprintf(LOG_INFO, "sending login-command: %s", cfg.login_command);
+
+            bool cmdSendingFailed = irc_cmd_msg(session, user, auth_command) == 1;
+
+            if (cmdSendingFailed) {
+                logprintf(LOG_ERR, "Cannot send command to authenticate!");
+            }
+
+            sdsfree(user);
+            sdsfree(auth_command);
+        }
+        else {
+            logprintf(LOG_ERR, "the login-command is too short. cant send this login-command.");
+        }
+    }    
+    else {
+        join_channels(session);
     }
 }
 
@@ -410,7 +469,8 @@ void initCallbacks(irc_callbacks_t *callbacks) {
     callbacks->event_unknown = dump_event;
     callbacks->event_privmsg = dump_event;
     callbacks->event_notice = dump_event;
-    callbacks->event_umode = dump_event;
+    callbacks->event_umode = event_umode;
+    callbacks->event_mode = event_mode;
 }
 
 void init_signal(int signum, void (*handler) (int)) {
@@ -478,26 +538,27 @@ int main (int argc, char **argv)
     logprintf(LOG_WARN, "test message for warn");
     logprintf(LOG_ERR, "test message for error");
 
-    char nick[NICKLEN+1];
-    memset(nick, 0, NICKLEN+1);
-    createRandomNick(NICKLEN, nick);
+    if (cfg.nick == NULL) {
+        cfg.nick = sdsnewlen(NULL, NICKLEN+1);
+        createRandomNick(NICKLEN, cfg.nick);
+    }
 
-    logprintf(LOG_INFO, "nick is %s\n", nick);
+    logprintf(LOG_INFO, "nick is %s\n", cfg.nick);
 
 #ifdef ENABLE_SSL
     irc_set_cert_verify_callback(cfg.session, openssl_check_certificate_callback);
 #endif
 
     if (cfg_get_bit(&cfg, USE_IPV4_FLAG)) {
-        ret = irc_connect4(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
+        ret = irc_connect4(cfg.session, cfg.ircServer, cfg.port, 0, cfg.nick, 0, 0);
     }
 #ifdef ENABLE_IPV6
     else if (cfg_get_bit(&cfg, USE_IPV6_FLAG)) {
-        ret = irc_connect6(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
+        ret = irc_connect6(cfg.session, cfg.ircServer, cfg.port, 0, cfg.nick, 0, 0);
     }
 #endif	
     else {
-        ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, nick, 0, 0);
+        ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, cfg.nick, 0, 0);
     }
 
     if (ret != 0) {

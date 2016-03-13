@@ -27,6 +27,8 @@ static struct argp_option options[] = {
 #endif
 {"port",   'p', "<port number>",      0,  "Use the following port to connect to server. default is 6667." },
 {"directory",   'd', "<download-directory>",      0,  "Directory, where to place the files." },
+{"nick",   'n', "<nickname>",      0,  "Use this specific nickname while connecting to the irc-server." },
+{"login",   'l', "<login-command>",      0,  "Use this login-command to authorize your nick to the irc-server after connecting." },
 { 0 }
 };
 
@@ -60,6 +62,16 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     case 'd':
         DBG_OK("setting target dir as %s.", arg);
         cfg->targetDir = sdsnew(arg);
+        break;
+        
+    case 'n':
+        DBG_OK("setting nickname as %s.", arg);
+        cfg->nick = sdsnew(arg);
+        break;
+        
+    case 'l':
+         DBG_OK("setting login-command as %s.", arg);
+        cfg->login_command = sdsnew(arg);
         break;
 
     case 'p':
