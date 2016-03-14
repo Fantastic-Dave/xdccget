@@ -89,8 +89,10 @@ struct xdccGetConfig {
 
 #define OUTPUT_FLAG             0x01
 #define ALLOW_ALL_CERTS_FLAG    0x02
-#define USE_IPV6_FLAG	        0x03
-#define VERIFY_CHECKSUM_FLAG     0x04
+#define USE_IPV4_FLAG           0x03
+#define USE_IPV6_FLAG	        0x04
+#define VERIFY_CHECKSUM_FLAG    0x05
+
 
 struct terminalDimension {
     int rows;

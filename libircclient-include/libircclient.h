@@ -237,6 +237,14 @@ int irc_connect (irc_session_t * session,
 			const char * username,
 			const char * realname);
 
+int irc_connect4 (irc_session_t * session, 
+			const char * server, 
+			unsigned short port,
+			const char * server_password,
+			const char * nick,
+			const char * username,
+			const char * realname);
+
 
 /*!
  * \fn int irc_connect6 (irc_session_t * session, const char * server, unsigned short port, const char * server_password, const char * nick, const char * username, const char * realname);
