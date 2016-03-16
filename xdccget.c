@@ -249,13 +249,11 @@ void event_mode(irc_session_t * session, const char * event, irc_parser_result_t
 }
 
 void event_umode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
-    dump_event(session, event, result);
+    dump_event(session, "UMODE", result);
     
     if (cfg.login_command != NULL) {
-        if (str_equals(event, "MODE") && result->num_params == 1) {
-            if (str_equals(result->params[0], "+r")) {
-                join_channels(session);
-            }
+        if (str_equals(result->params[0], "+r")) {
+            join_channels(session);
         }
     }
 }
@@ -263,7 +261,7 @@ void event_umode(irc_session_t * session, const char * event, irc_parser_result_
 
 void event_join (irc_session_t * session, const char * event, irc_parser_result_t *result)
 {
-    
+    dump_event(session, event, result);
     irc_cmd_user_mode (session, "+i");
 
     if (cfg.login_command == NULL) {
