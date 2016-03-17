@@ -437,9 +437,70 @@ static void libirc_process_incoming_data(irc_session_t * session, size_t process
     free_parser_result(session->line_parser);
 }
 
-int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_set *out_set) {
+static int handle_connecting_state(irc_session_t * session) {
     char buf[256], hname[256];
+    // Now we have to determine whether the socket is connected 
+    // or the connect is failed
+    struct sockaddr_storage saddr, laddr;
+    socklen_t slen = sizeof (saddr);
+    socklen_t llen = sizeof (laddr);
 
+    if (getsockname(session->sock, (struct sockaddr*) &laddr, &llen) < 0
+            || getpeername(session->sock, (struct sockaddr*) &saddr, &slen) < 0) {
+        // connection failed
+        DBG_WARN("connection failed");
+        session->state = LIBIRC_STATE_DISCONNECTED;
+        session->lasterror = LIBIRC_ERR_CONNECT;
+        return 1;
+    }
+
+    if (saddr.ss_family == AF_INET)
+        memcpy(&session->local_addr.v4, &((struct sockaddr_in *) &laddr)->sin_addr, sizeof (struct in_addr));
+#if defined (ENABLE_IPV6)
+else
+        memcpy(&session->local_addr.v6, &((struct sockaddr_in6 *) &laddr)->sin6_addr, sizeof (struct in6_addr));
+#endif
+
+#if defined (ENABLE_DEBUG)
+    if (IS_DEBUG_ENABLED(session)) {
+        if (saddr.ss_family == AF_INET)
+            fprintf(stderr, "[DEBUG] Detected local address: %s\n", inet_ntoa(session->local_addr.v4));
+#if defined (ENABLE_IPV6)
+else
+            fprintf(stderr, "[DEBUG] Detected local address: %s\n", inet_ntoa(session->local_addr.v6));
+#endif
+    }
+#endif
+
+    session->state = LIBIRC_STATE_CONNECTED;
+
+    // Get the hostname
+    if (gethostname(hname, sizeof (hname)) < 0)
+        strcpy(hname, "unknown");
+
+    // Prepare the data, which should be sent to the server
+    if (session->server_password) {
+        snprintf(buf, sizeof (buf), "PASS %s", session->server_password);
+        irc_send_raw(session, buf);
+    }
+
+    snprintf(buf, sizeof (buf), "NICK %s", session->nick);
+    irc_send_raw(session, buf);
+
+    /*
+     * RFC 1459 states that "hostname and servername are normally 
+     * ignored by the IRC server when the USER command comes from 
+     * a directly connected client (for security reasons)", therefore 
+     * we don't need them.
+     */
+    snprintf(buf, sizeof (buf), "USER %s %s unknown :%s",
+            session->nick, session->nick,
+            session->realname ? session->realname : "realname");
+    irc_send_raw(session, buf);
+    return 0;
+}
+
+int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_set *out_set) {
     if (session->sock < 0
             || session->state == LIBIRC_STATE_INIT
             || session->state == LIBIRC_STATE_DISCONNECTED) {
@@ -451,71 +512,12 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
     libirc_dcc_process_descriptors(session, in_set, out_set);
 
     // Handle "connection succeed" / "connection failed"
-    if (session->state == LIBIRC_STATE_CONNECTING
-            && FD_ISSET(session->sock, out_set)) {
-        // Now we have to determine whether the socket is connected 
-        // or the connect is failed
-        struct sockaddr_storage saddr, laddr;
-        socklen_t slen = sizeof (saddr);
-        socklen_t llen = sizeof (laddr);
-
-        if (getsockname(session->sock, (struct sockaddr*) &laddr, &llen) < 0
-                || getpeername(session->sock, (struct sockaddr*) &saddr, &slen) < 0) {
-            // connection failed
-            DBG_WARN("connection failed");
-            session->state = LIBIRC_STATE_DISCONNECTED;
-            session->lasterror = LIBIRC_ERR_CONNECT;
-            return 1;
-        }
-
-        if (saddr.ss_family == AF_INET)
-            memcpy(&session->local_addr.v4, &((struct sockaddr_in *) &laddr)->sin_addr, sizeof (struct in_addr));
-#if defined (ENABLE_IPV6)
-        else
-            memcpy(&session->local_addr.v6, &((struct sockaddr_in6 *) &laddr)->sin6_addr, sizeof (struct in6_addr));
-#endif
-
-#if defined (ENABLE_DEBUG)
-        if (IS_DEBUG_ENABLED(session)) {
-            if (saddr.ss_family == AF_INET)
-                fprintf(stderr, "[DEBUG] Detected local address: %s\n", inet_ntoa(session->local_addr.v4));
-#if defined (ENABLE_IPV6)
-            else
-                fprintf(stderr, "[DEBUG] Detected local address: %s\n", inet_ntoa(session->local_addr.v6));
-#endif
-        }
-#endif
-
-        session->state = LIBIRC_STATE_CONNECTED;
-
-        // Get the hostname
-        if (gethostname(hname, sizeof (hname)) < 0)
-            strcpy(hname, "unknown");
-
-        // Prepare the data, which should be sent to the server
-        if (session->server_password) {
-            snprintf(buf, sizeof (buf), "PASS %s", session->server_password);
-            irc_send_raw(session, buf);
-        }
-
-        snprintf(buf, sizeof (buf), "NICK %s", session->nick);
-        irc_send_raw(session, buf);
-
-        /*
-         * RFC 1459 states that "hostname and servername are normally 
-         * ignored by the IRC server when the USER command comes from 
-         * a directly connected client (for security reasons)", therefore 
-         * we don't need them.
-         */
-        snprintf(buf, sizeof (buf), "USER %s %s unknown :%s",
-                session->nick, session->nick,
-                session->realname ? session->realname : "realname");
-        irc_send_raw(session, buf);
-
-        return 0;
+    if (unlikely(session->state == LIBIRC_STATE_CONNECTING
+            && FD_ISSET(session->sock, out_set))) {
+        return handle_connecting_state(session);
     }
 
-    if (session->state != LIBIRC_STATE_CONNECTED) {
+    if (unlikely(session->state != LIBIRC_STATE_CONNECTED)) {
         DBG_WARN("session->state != LIBIRC_STATE_CONNECTED");
         session->state = LIBIRC_STATE_DISCONNECTED;
         session->lasterror = LIBIRC_ERR_STATE;
@@ -523,10 +525,10 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
     }
 
     // Hey, we've got something to read!
-    if (FD_ISSET(session->sock, in_set)) {
+    if (likely(FD_ISSET(session->sock, in_set))) {
         int offset, length = session_socket_read(session);
 
-        if (length < 0) {
+        if (unlikely(length < 0)) {
             if (session->lasterror == 0)
                 session->lasterror = (length == 0 ? LIBIRC_ERR_CLOSED : LIBIRC_ERR_TERMINATED);
 
@@ -561,7 +563,7 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
         libirc_mutex_lock(&session->mutex_session);
         length = session_socket_write(session);
 
-        if (length < 0) {
+        if (unlikely(length < 0)) {
             if (session->lasterror == 0)
                 session->lasterror = (length == 0 ? LIBIRC_ERR_CLOSED : LIBIRC_ERR_TERMINATED);
 

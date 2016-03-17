@@ -356,7 +356,7 @@ static void handleConnectingState(irc_session_t * ircsession, irc_dcc_session_t 
 }
 
 static void handleConnectedState(irc_session_t * ircsession, irc_dcc_session_t *dcc, fd_set *in_set, fd_set *out_set) {
-    if (FD_ISSET(dcc->sock, in_set)) {
+    if (likely(FD_ISSET(dcc->sock, in_set))) {
        recv_dcc_file(ircsession, dcc);
     }
     else {
@@ -366,7 +366,7 @@ static void handleConnectedState(irc_session_t * ircsession, irc_dcc_session_t *
 }
 
 static void handleConfirmSizeState(irc_session_t * ircsession, irc_dcc_session_t *dcc, fd_set *in_set, fd_set *out_set) {
-    if (FD_ISSET(dcc->sock, out_set)) {	
+    if (likely(FD_ISSET(dcc->sock, out_set))) {	
         send_current_file_offset_to_sender(ircsession, dcc);
     }
 }
