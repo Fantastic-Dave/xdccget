@@ -71,7 +71,7 @@ static inline ssize_t Read (file_io_t *fd, void *buf, size_t count) {
 
     do {
         ssize_t ret = read(fd->fd, buf + readBytes, count-readBytes);
-        if (ret == -1) {
+        if (unlikely(ret == -1)) {
             logprintf(LOG_ERR, "Cant read the file %s. Exiting now.", fd->fileName);
             exitPgm(EXIT_FAILURE);
         }
@@ -89,7 +89,7 @@ static inline ssize_t Read (file_io_t *fd, void *buf, size_t count) {
 static inline void Write(file_io_t *fd, const void *buf, size_t count) {
 #ifdef FILE_API
     size_t written = fwrite(buf, 1, count, fd->fd);
-    if (written != count) {
+    if (unlikely(written != count)) {
         logprintf(LOG_ERR, "Cant write the file %s. Exiting now.", fd->fileName);
         exitPgm(EXIT_FAILURE);
     }
@@ -98,7 +98,7 @@ static inline void Write(file_io_t *fd, const void *buf, size_t count) {
     do {
         ssize_t ret = write(fd->fd, buf + written, count-written);
         written += ret;
-        if (ret == -1) {
+        if (unlikely(ret == -1)) {
             logprintf(LOG_ERR, "Cant write the file %s. Exiting now.", fd->fileName);
             exitPgm(EXIT_FAILURE);
         }

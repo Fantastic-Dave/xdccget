@@ -298,12 +298,12 @@ void callback_dcc_recv_file(irc_session_t * session, irc_dcc_t id, int status, v
     progress->sizeRcvd += length;
     Write(context->fd, data, length);
 
-    if (cfg_get_bit(getCfg(), OUTPUT_FLAG)) {
+    if (unlikely(cfg_get_bit(getCfg(), OUTPUT_FLAG))) {
         output_all_progesses();
         cfg_clear_bit(getCfg(), OUTPUT_FLAG);
     }
 
-    if (progress->sizeRcvd == progress->completeFileSize) {
+    if (unlikely(progress->sizeRcvd == progress->completeFileSize)) {
         alarm(0);
         outputProgress(progress);
         lastDownload = curDownload;

@@ -60,6 +60,14 @@
 	#define DBG_ERR(format, ...) do {} while(0)
 #endif
 
+#ifdef __GNUC__
+    #define likely(x)       __builtin_expect(!!(x), 1)
+    #define unlikely(x)     __builtin_expect(!!(x), 0)
+#else
+    #define likely(x)       (x)
+    #define unlikely(x)     (x)
+#endif
+
 /* define macro for free that checks if ptr is null and sets ptr after free to null. */
 
 #define FREE(X) \

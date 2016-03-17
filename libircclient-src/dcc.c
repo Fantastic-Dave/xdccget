@@ -75,7 +75,7 @@ static inline int ssl_read_wrapper(irc_session_t *session, irc_dcc_session_t *dc
 
     length = SSL_read(dcc->ssl_ctx, buf, num);
 
-    if (length == -1) {
+    if (unlikely(length == -1)) {
         int ssl_err = SSL_get_error(dcc->ssl_ctx, length);
         *sslError = ssl_err;
 
@@ -104,7 +104,7 @@ static inline int ssl_write_wrapper(irc_session_t *session, irc_dcc_session_t *d
 
     length = SSL_write(dcc->ssl_ctx, buf, num);
 
-    if (length == -1) {
+    if (unlikely(length == -1)) {
         int ssl_err = SSL_get_error(dcc->ssl_ctx, length);
         *sslError = ssl_err;
 
@@ -159,10 +159,10 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
         rcvdBytes = socket_recv(&dcc->sock, dcc->incoming_buf, amount);
 #endif
 
-        if (rcvdBytes < 0) {
+        if (unlikely(rcvdBytes < 0)) {
             err = LIBIRC_ERR_READ;
         }
-        else if (rcvdBytes == 0) {
+        else if (unlikely(rcvdBytes == 0)) {
             err = LIBIRC_ERR_CLOSED;
         }
         else {
@@ -179,7 +179,7 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
          * If error arises somewhere above, we inform the caller 
          * of failure, and destroy this session.
          */
-        if (err) {
+        if (unlikely(err)) {
             libirc_mutex_unlock(&ircsession->mutex_dcc);
             (*dcc->cb)(ircsession, dcc->id, err, dcc->ctx, 0, 0);
             libirc_mutex_lock(&ircsession->mutex_dcc);
@@ -215,11 +215,11 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
 #else
     sentBytes = socket_send(&dcc->sock, &confirmSizeNetworkOrder, offset);
 #endif
-    if (sentBytes < 0) {
+    if (unlikely(sentBytes < 0)) {
         DBG_WARN("err send length < 0");
         DBG_WARN("error msg: %s\n", strerror(errno));
         err = LIBIRC_ERR_WRITE;
-    } else if (sentBytes == 0) {
+    } else if (unlikely(sentBytes == 0)) {
         err = LIBIRC_ERR_CLOSED;
     } else {
         if (dcc->received_file_size == dcc->file_confirm_offset) {
@@ -238,7 +238,7 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
      * If error arises somewhere above, we inform the caller 
      * of failure, and destroy this session.
      */
-    if (err) {
+    if (unlikely(err)) {
         libirc_mutex_unlock(&session->mutex_dcc);
         (*dcc->cb)(session, dcc->id, err, dcc->ctx, 0, 0);
         libirc_mutex_lock(&session->mutex_dcc);
