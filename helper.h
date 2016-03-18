@@ -125,7 +125,7 @@ void logprintf(int logLevel, char *formatString, ...);
 /* Wrapper for malloc. Checks if malloc fails and exits pgm if it does. */
 static inline void* Malloc(size_t size) {
     void *t = malloc(size);
-    if (t == NULL)
+    if (unlikely(t == NULL))
     {
         logprintf(LOG_ERR, "malloc failed. exiting now.\n");
         exit(EXIT_FAILURE);
@@ -142,7 +142,7 @@ static inline void* Safe_Malloc(size_t size) {
 /* wraps calloc call. */
 static inline void* Calloc(size_t numElements, size_t sizeOfElement) {
     void *t = calloc(numElements, sizeOfElement);
-    if (t == NULL)
+    if (unlikely(t == NULL))
     {
         logprintf(LOG_ERR, "calloc failed. exiting now.\n");
         exit(EXIT_FAILURE);

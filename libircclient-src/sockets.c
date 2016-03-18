@@ -135,7 +135,7 @@ static struct irc_addr_t** resolve_hostname_by_dns(const char *hostname, int *nu
     memset(&hints, 0, sizeof (struct addrinfo));
     hints.ai_family = addressFamily; /* AF_UNSPEC for Allow IPv4 or IPv6 */
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = 0;
+    hints.ai_flags = AI_ADDRCONFIG;
     hints.ai_protocol = IPPROTO_TCP;
 
     ret = getaddrinfo(hostname, NULL, &hints, &result);
