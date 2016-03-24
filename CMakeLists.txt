@@ -19,6 +19,7 @@ add_definitions(-DENABLE_SSL)
 add_definitions(-DDEBUG)
 add_definitions(-DFILE_API)
 add_definitions(-DENABLE_IPV6)
+add_definitions(-D_FILE_OFFSET_BITS=64)
 include_directories(libircclient-include)
 
 set(SOURCE_FILES
