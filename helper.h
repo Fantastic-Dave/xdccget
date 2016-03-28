@@ -91,6 +91,8 @@ struct xdccGetConfig {
     bool sended;
     irc_session_t *session;
     sds targetDir;
+    sds nick;
+    sds login_command;
     char *args[3];
     bitset_t flags;
 };
