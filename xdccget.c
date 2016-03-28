@@ -270,6 +270,30 @@ void event_join (irc_session_t * session, const char * event, irc_parser_result_
     }
 }
 
+static void send_login_command(irc_session_t *session) {
+    cfg.login_command = sdstrim(cfg.login_command, " \t");
+    
+    if (sdslen(cfg.login_command) >= 9) {
+        sds user = sdsdup(cfg.login_command);
+        sds auth_command = sdsdup(cfg.login_command);
+        sdsrange(user, 0, 8);
+        sdsrange(auth_command, 9, sdslen(auth_command));
+
+        logprintf(LOG_INFO, "sending login-command: %s", cfg.login_command);
+
+        bool cmdSendingFailed = irc_cmd_msg(session, user, auth_command) == 1;
+
+        if (cmdSendingFailed) {
+            logprintf(LOG_ERR, "Cannot send command to authenticate!");
+        }
+
+        sdsfree(user);
+        sdsfree(auth_command);
+    } else {
+        logprintf(LOG_ERR, "the login-command is too short. cant send this login-command.");
+    }
+}
+
 
 void event_connect (irc_session_t *session, const char * event, irc_parser_result_t *result)
 {
@@ -280,27 +304,7 @@ void event_connect (irc_session_t *session, const char * event, irc_parser_resul
 #endif
     
     if (cfg.login_command != NULL) {
-        cfg.login_command = sdstrim(cfg.login_command, " \t");
-        if (sdslen(cfg.login_command) >= 9) {
-            sds user = sdsdup(cfg.login_command);
-            sds auth_command = sdsdup(cfg.login_command);
-            sdsrange(user, 0, 8);
-            sdsrange(auth_command, 9, sdslen(auth_command));
-
-            logprintf(LOG_INFO, "sending login-command: %s", cfg.login_command);
-
-            bool cmdSendingFailed = irc_cmd_msg(session, user, auth_command) == 1;
-
-            if (cmdSendingFailed) {
-                logprintf(LOG_ERR, "Cannot send command to authenticate!");
-            }
-
-            sdsfree(user);
-            sdsfree(auth_command);
-        }
-        else {
-            logprintf(LOG_ERR, "the login-command is too short. cant send this login-command.");
-        }
+        send_login_command(session);
     }    
     else {
         join_channels(session);
@@ -546,7 +550,7 @@ int main (int argc, char **argv)
     logprintf(LOG_ERR, "test message for error");
 
     if (cfg.nick == NULL) {
-        cfg.nick = sdsnewlen(NULL, NICKLEN+1);
+        cfg.nick = sdsnewlen(NULL, NICKLEN);
         createRandomNick(NICKLEN, cfg.nick);
     }
 
