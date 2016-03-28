@@ -241,7 +241,6 @@ static void send_xdcc_requests(irc_session_t *session) {
 }
 
 void event_mode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
-    dump_event(session, event, result);
     
     if (cfg.login_command != NULL && result->num_params == 3) {
         send_xdcc_requests(session);
@@ -250,7 +249,6 @@ void event_mode(irc_session_t * session, const char * event, irc_parser_result_t
 }
 
 void event_umode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
-    dump_event(session, "UMODE", result);
     
     if (cfg.login_command != NULL) {
         if (str_equals(result->params[0], "+r")) {
@@ -262,7 +260,6 @@ void event_umode(irc_session_t * session, const char * event, irc_parser_result_
 
 void event_join (irc_session_t * session, const char * event, irc_parser_result_t *result)
 {
-    dump_event(session, event, result);
     irc_cmd_user_mode (session, "+i");
 
     if (cfg.login_command == NULL) {
