@@ -208,8 +208,6 @@ void dump_event (irc_session_t * session, const char * event, irc_parser_result_
     }
 
     logprintf(LOG_INFO, "Event \"%s\", origin: \"%s\", params: %d [%s]", event, result->nick ? result->nick : "NULL", cnt, param_string);
-
-    checkMD5ChecksumNotice(event, result);
     sdsfree(param_string);
 }
 
@@ -240,16 +238,39 @@ static void send_xdcc_requests(irc_session_t *session) {
     }
 }
 
-void event_mode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
+static inline bool isPasswordAccepted(const char *message) {
+    const char *password_sequences[] = {
+        "Password accepted",
+        "You are now identified",
+        "I recognize you"
+    };
     
-    if (cfg.login_command != NULL && result->num_params == 3) {
-        send_xdcc_requests(session);
+    size_t num_sequences = sizeof(password_sequences) / sizeof(const char*);
+    for (size_t i = 0; i < num_sequences; i++) {
+        char *t = strstr(message, password_sequences[i]);
+        if (t != NULL) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+void event_notice(irc_session_t * session, const char * event, irc_parser_result_t *result) {
+    dump_event(session, event, result);
+    checkMD5ChecksumNotice(event, result);
+}
+
+void event_mode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
+    if (cfg.login_command != NULL && result->num_params > 1) {
+        if (str_equals(result->params[1], "+v")) {
+            send_xdcc_requests(session);
+        }
     }
     
 }
 
 void event_umode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
-    
     if (cfg.login_command != NULL) {
         if (str_equals(result->params[0], "+r")) {
             join_channels(session);
@@ -476,7 +497,7 @@ void initCallbacks(irc_callbacks_t *callbacks) {
     callbacks->event_ctcp_action = dump_event;
     callbacks->event_unknown = dump_event;
     callbacks->event_privmsg = dump_event;
-    callbacks->event_notice = dump_event;
+    callbacks->event_notice = event_notice;
     callbacks->event_umode = event_umode;
     callbacks->event_mode = event_mode;
 }

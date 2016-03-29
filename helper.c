@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <inttypes.h>
 #include <ctype.h>
- #include <openssl/x509v3.h>
+#include <openssl/x509v3.h>
 
 #include "helper.h"
 #include "file.h"
@@ -50,14 +50,16 @@ void logprintf(int logLevel, char *formatString, ...) {
     va_list va_alist;
     struct xdccGetConfig *cfg = getCfg();
 
+   if (cfg->logLevel == LOG_QUIET) {
+      return;
+   }
+    
     va_start(va_alist, formatString);
 
     switch (logLevel) {
         case LOG_QUIET:
-            if (cfg->logLevel >= LOG_QUIET) {
-                logprintf_line(stdout, KBLU, "Quiet", formatString, va_alist);
-            }
-            break;
+
+           break;
         case LOG_INFO:
             if (cfg->logLevel >= LOG_INFO) {
                 logprintf_line(stdout, KGRN, "Info", formatString, va_alist);
