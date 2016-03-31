@@ -349,13 +349,10 @@ int irc_run (irc_session_t * session);
 
 
 /*!
- * \fn int irc_add_select_descriptors (irc_session_t * session, fd_set *in_set, fd_set *out_set, int * maxfd)
+ * \fn int irc_add_select_descriptors (irc_session_t * session)
  * \brief Adds IRC socket(s) for the descriptor set to use in select().
  *
  * \param session An initiated and connected session.
- * \param in_set  A FD_IN descriptor set for select()
- * \param out_set A FD_OUT descriptor set for select()
- * \param maxfd   A max descriptor found.
  *
  * \return Return code 0 means success. Other value means error, the error 
  *  code may be obtained through irc_errno().
@@ -370,16 +367,14 @@ int irc_run (irc_session_t * session);
  * \sa irc_process_select_descriptors
  * \ingroup running 
  */
-int irc_add_select_descriptors (irc_session_t * session, fd_set *in_set, fd_set *out_set, int * maxfd);
+int irc_add_select_descriptors (irc_session_t * session);
 
 
 /*!
- * \fn int irc_process_select_descriptors (irc_session_t * session, fd_set *in_set, fd_set *out_set)
+ * \fn int irc_process_select_descriptors (irc_session_t * session)
  * \brief Processes the IRC socket(s), which descriptor(s) are set.
  *
  * \param session An initiated and connected session.
- * \param in_set  A FD_IN descriptor set for select()
- * \param out_set A FD_OUT descriptor set for select()
  *
  * \return Return code 0 means success. Other value means error, the error 
  *  code may be obtained through irc_errno().
@@ -390,7 +385,7 @@ int irc_add_select_descriptors (irc_session_t * session, fd_set *in_set, fd_set 
  * \sa irc_add_select_descriptors
  * \ingroup running 
  */
-int irc_process_select_descriptors (irc_session_t * session, fd_set *in_set, fd_set *out_set);
+int irc_process_select_descriptors (irc_session_t * session);
 
 
 /*!

@@ -20,6 +20,7 @@
 #include "params.h"
 #include "irc_line_parser.h"
 #include "session.h"
+#include "fd_watcher.h"
 
 #define NO_SSL     0
 #define USE_SSL    1
@@ -292,7 +293,7 @@ static void libirc_remove_dcc_session(irc_session_t * session, irc_dcc_session_t
     free(dcc);
 }
 
-static void libirc_dcc_add_descriptors(irc_session_t * ircsession, fd_set *in_set, fd_set *out_set, int * maxfd) {
+static void libirc_dcc_add_descriptors(irc_session_t * ircsession) {
     irc_dcc_session_t * dcc, *dcc_next;
 
     libirc_mutex_lock(&ircsession->mutex_dcc);
@@ -309,18 +310,19 @@ static void libirc_dcc_add_descriptors(irc_session_t * ircsession, fd_set *in_se
     }
 
     for (dcc = ircsession->dcc_sessions; dcc; dcc = dcc->next) {
+        fdwatch_add_fd(dcc->sock);
         switch (dcc->state) {
             case LIBIRC_STATE_CONNECTING:
                 // While connection, only out_set descriptor should be set
-                libirc_add_to_set(dcc->sock, out_set, maxfd);
+                fdwatch_set_fd(dcc->sock, FDW_WRITE);
                 break;
 
             case LIBIRC_STATE_CONNECTED:
-                libirc_add_to_set(dcc->sock, in_set, maxfd);
+                fdwatch_set_fd(dcc->sock, FDW_READ);
                 break;
 
             case LIBIRC_STATE_CONFIRM_SIZE:
-                libirc_add_to_set(dcc->sock, out_set, maxfd);
+                fdwatch_set_fd(dcc->sock, FDW_WRITE);
                 break;
             case LIBIRC_STATE_WAITING_FOR_RESUME_ACK:
 
@@ -334,8 +336,8 @@ static void libirc_dcc_add_descriptors(irc_session_t * ircsession, fd_set *in_se
     libirc_mutex_unlock(&ircsession->mutex_dcc);
 }
 
-static void handleConnectingState(irc_session_t * ircsession, irc_dcc_session_t *dcc, fd_set *in_set, fd_set *out_set) {
-    if (FD_ISSET(dcc->sock, out_set)) {
+static void handleConnectingState(irc_session_t * ircsession, irc_dcc_session_t *dcc) {
+    if (fdwatch_check_fd(dcc->sock, FDW_WRITE)) {
         // Now we have to determine whether the socket is connected 
         // or the connect is failed
         struct sockaddr_in saddr;
@@ -355,8 +357,8 @@ static void handleConnectingState(irc_session_t * ircsession, irc_dcc_session_t 
     }
 }
 
-static void handleConnectedState(irc_session_t * ircsession, irc_dcc_session_t *dcc, fd_set *in_set, fd_set *out_set) {
-    if (likely(FD_ISSET(dcc->sock, in_set))) {
+static void handleConnectedState(irc_session_t * ircsession, irc_dcc_session_t *dcc) {
+    if (likely(fdwatch_check_fd(dcc->sock, FDW_READ))) {
        recv_dcc_file(ircsession, dcc);
     }
     else {
@@ -365,13 +367,13 @@ static void handleConnectedState(irc_session_t * ircsession, irc_dcc_session_t *
     }
 }
 
-static void handleConfirmSizeState(irc_session_t * ircsession, irc_dcc_session_t *dcc, fd_set *in_set, fd_set *out_set) {
-    if (likely(FD_ISSET(dcc->sock, out_set))) {	
+static void handleConfirmSizeState(irc_session_t * ircsession, irc_dcc_session_t *dcc) {
+    if (likely(fdwatch_check_fd(dcc->sock, FDW_WRITE))) {	
         send_current_file_offset_to_sender(ircsession, dcc);
     }
 }
 
-static void libirc_dcc_process_descriptors(irc_session_t * ircsession, fd_set *in_set, fd_set *out_set) {
+static void libirc_dcc_process_descriptors(irc_session_t * ircsession) {
     irc_dcc_session_t * dcc;
 
     /*
@@ -384,15 +386,15 @@ static void libirc_dcc_process_descriptors(irc_session_t * ircsession, fd_set *i
         switch (dcc->state) {
             case LIBIRC_STATE_CONNECTING:
                 //printf("LIBIRC_STATE_CONNECTING\n");
-                handleConnectingState(ircsession, dcc, in_set, out_set);
+                handleConnectingState(ircsession, dcc);
             break;
             case LIBIRC_STATE_CONNECTED:
                 //printf("LIBIRC_STATE_CONNECTED\n");
-                handleConnectedState(ircsession, dcc, in_set, out_set);
+                handleConnectedState(ircsession, dcc);
             break;
             case LIBIRC_STATE_CONFIRM_SIZE:
                 //printf("LIBIRC_STATE_CONFIRM_SIZE\n");
-                handleConfirmSizeState(ircsession, dcc, in_set, out_set);
+                handleConfirmSizeState(ircsession, dcc);
             break;
             case LIBIRC_STATE_WAITING_FOR_RESUME_ACK:
 
@@ -662,7 +664,7 @@ int irc_dcc_accept(irc_session_t * session, irc_dcc_t dccid, void * ctx, irc_dcc
                 if (ssl_err == SSL_ERROR_WANT_READ || ssl_err == SSL_ERROR_WANT_WRITE) {
                     continue;
                 } else {
-                    DBG_WARN("error was %s", ERR_error_string(ssl_err, NULL));
+                    print_ssl_error_stack();
                     session->lasterror = LIBIRC_ERR_CONNECT;
                     return 1;
                 }

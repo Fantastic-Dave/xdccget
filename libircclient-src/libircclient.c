@@ -24,13 +24,15 @@
 #include "../helper.h"
 
 #include "utils.c"
+#include "fd_watcher.c"
 #include "errors.c"
 #include "colors.c"
 #include "ssl.c"
 #include "dcc.c"
 #include "commands.c"
 #include "irc_parser.c"
-#include "irc_line_parser.c" 
+#include "irc_line_parser.c"
+#include "fd_watcher.h" 
 
 irc_session_t * irc_create_session(irc_callbacks_t * callbacks) {
     irc_session_t * session = calloc(1, sizeof (irc_session_t));
@@ -364,37 +366,38 @@ int irc_run(irc_session_t * session) {
         session->lasterror = LIBIRC_ERR_STATE;
         return 1;
     }
+    
+    fdwatch_init();
+    
 
     while (irc_is_connected(session)) {
-        struct timeval tv;
-        fd_set in_set, out_set;
-        int maxfd = 0;
+        long timeout_ms = 750;
 
-        tv.tv_usec = 250000;
-        tv.tv_sec = 0;
+        fdwatch_zero();
+        fdwatch_add_fd(session->sock);
 
-        // Init sets
-        FD_ZERO(&in_set);
-        FD_ZERO(&out_set);
+        irc_add_select_descriptors(session);
 
-        irc_add_select_descriptors(session, &in_set, &out_set, &maxfd);
-
-        if (select(maxfd + 1, &in_set, &out_set, 0, &tv) < 0) {
+        if (fdwatch(timeout_ms) < 0) {
             if (socket_error() == EINTR)
                 continue;
 
             session->lasterror = LIBIRC_ERR_TERMINATED;
             return 1;
         }
+        
+        if (session->callbacks.keep_alive_callback) {
+            session->callbacks.keep_alive_callback(session);
+        }
 
-        if (irc_process_select_descriptors(session, &in_set, &out_set))
+        if (irc_process_select_descriptors(session))
             return 1;
     }
 
     return 0;
 }
 
-int irc_add_select_descriptors(irc_session_t * session, fd_set *in_set, fd_set *out_set, int * maxfd) {
+int irc_add_select_descriptors(irc_session_t * session) {
     if (session->sock < 0
             || session->state == LIBIRC_STATE_INIT
             || session->state == LIBIRC_STATE_DISCONNECTED) {
@@ -407,26 +410,26 @@ int irc_add_select_descriptors(irc_session_t * session, fd_set *in_set, fd_set *
     switch (session->state) {
         case LIBIRC_STATE_CONNECTING:
             // While connection, only out_set descriptor should be set
-            libirc_add_to_set(session->sock, out_set, maxfd);
+            fdwatch_set_fd(session->sock, FDW_WRITE);
             break;
 
         case LIBIRC_STATE_CONNECTED:
             // Add input descriptor if there is space in input buffer
             if (session->incoming_offset < (sizeof (session->incoming_buf) - 1)
                     || (session->flags & SESSIONFL_SSL_WRITE_WANTS_READ) != 0)
-                libirc_add_to_set(session->sock, in_set, maxfd);
+                fdwatch_set_fd(session->sock, FDW_READ);
 
             // Add output descriptor if there is something in output buffer
             if (libirc_findcrlf(session->outgoing_buf, session->outgoing_offset) > 0
                     || (session->flags & SESSIONFL_SSL_READ_WANTS_WRITE) != 0)
-                libirc_add_to_set(session->sock, out_set, maxfd);
+                fdwatch_set_fd(session->sock, FDW_WRITE);
 
             break;
     }
 
     libirc_mutex_unlock(&session->mutex_session);
 
-    libirc_dcc_add_descriptors(session, in_set, out_set, maxfd);
+    libirc_dcc_add_descriptors(session);
     return 0;
 }
 
@@ -500,7 +503,7 @@ else
     return 0;
 }
 
-int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_set *out_set) {
+int irc_process_select_descriptors(irc_session_t * session) {
     if (session->sock < 0
             || session->state == LIBIRC_STATE_INIT
             || session->state == LIBIRC_STATE_DISCONNECTED) {
@@ -509,11 +512,11 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
     }
 
     session->lasterror = 0;
-    libirc_dcc_process_descriptors(session, in_set, out_set);
+    libirc_dcc_process_descriptors(session);
 
     // Handle "connection succeed" / "connection failed"
     if (unlikely(session->state == LIBIRC_STATE_CONNECTING
-            && FD_ISSET(session->sock, out_set))) {
+            && fdwatch_check_fd(session->sock, FDW_WRITE))) {
         return handle_connecting_state(session);
     }
 
@@ -525,7 +528,7 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
     }
 
     // Hey, we've got something to read!
-    if (likely(FD_ISSET(session->sock, in_set))) {
+    if (likely(fdwatch_check_fd(session->sock, FDW_READ))) {
         int offset, length = session_socket_read(session);
 
         if (unlikely(length < 0)) {
@@ -556,7 +559,7 @@ int irc_process_select_descriptors(irc_session_t * session, fd_set *in_set, fd_s
     }
 
     // We can write a stored buffer
-    if (FD_ISSET(session->sock, out_set)) {
+    if (fdwatch_check_fd(session->sock, FDW_WRITE)) {
         int length;
 
         // Because outgoing_buf could be changed asynchronously, we should lock any change

@@ -313,3 +313,14 @@ static int session_socket_write(irc_session_t * session) {
 
     return length;
 }
+
+static void print_ssl_error_stack()
+{
+    char buf[256];
+    unsigned long err;
+
+    while ((err = ERR_get_error()) != 0) {
+        ERR_error_string_n(err, buf, sizeof (buf));
+        DBG_WARN("%s\n", buf);
+    }
+}

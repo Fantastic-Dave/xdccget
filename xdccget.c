@@ -377,11 +377,6 @@ void callback_dcc_recv_file(irc_session_t * session, irc_dcc_t id, int status, v
     progress->sizeRcvd += length;
     Write(context->fd, data, length);
 
-    if (unlikely(cfg_get_bit(getCfg(), OUTPUT_FLAG))) {
-        output_all_progesses();
-        cfg_clear_bit(getCfg(), OUTPUT_FLAG);
-    }
-
     if (unlikely(progress->sizeRcvd == progress->completeFileSize)) {
         alarm(0);
         outputProgress(progress);
@@ -412,7 +407,12 @@ void callback_dcc_resume_file (irc_session_t * session, irc_dcc_t dccid, int sta
     struct dccDownloadProgress *tdp = context->progress;
     tdp->sizeRcvd = length;
 
-    irc_dcc_accept (session, dccid, ctx, callback_dcc_recv_file);
+    int ret = irc_dcc_accept (session, dccid, ctx, callback_dcc_recv_file);
+    
+    if (ret != 0) {
+        logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
+        exitPgm(EXIT_FAILURE);
+    }
     alarm(1);
     DBG_OK("after irc_dcc_accept!\n");
 }
@@ -473,18 +473,28 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
 
         logprintf(LOG_INFO, "file %s already exists, need to resume.\n", completePath);
         irc_dcc_resume(session, dccid, context, callback_dcc_resume_file, nick, fileSize);
-
     } 
     else {
+        int ret;
         context->fd = Open(completePath, "w");
-
         logprintf(LOG_INFO, "file %s does not exist. creating file and downloading it now.", completePath);
-accept_flag:			
-        irc_dcc_accept (session, dccid, context, callback_dcc_recv_file);
+accept_flag:
+        ret = irc_dcc_accept(session, dccid, context, callback_dcc_recv_file);
+        if (ret != 0) {
+            logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
+            exitPgm(EXIT_FAILURE);
+        }
         alarm(1);
     }
 
     sdsfree(fileName);
+}
+
+void print_output_callback (irc_session_t *session) {
+    if (unlikely(cfg_get_bit(getCfg(), OUTPUT_FLAG))) {
+        output_all_progesses();
+        cfg_clear_bit(getCfg(), OUTPUT_FLAG);
+    }
 }
 
 void initCallbacks(irc_callbacks_t *callbacks) {
@@ -500,6 +510,7 @@ void initCallbacks(irc_callbacks_t *callbacks) {
     callbacks->event_notice = event_notice;
     callbacks->event_umode = event_umode;
     callbacks->event_mode = event_mode;
+    callbacks->keep_alive_callback = print_output_callback;
 }
 
 void init_signal(int signum, void (*handler) (int)) {

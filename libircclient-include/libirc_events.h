@@ -26,6 +26,8 @@ typedef void (*irc_event_callback_t) (irc_session_t * session, const char * even
 
 typedef void (*irc_eventcode_callback_t) (irc_session_t * session, unsigned int event, irc_parser_result_t *result);
 
+typedef void (*irc_keep_alive_callback_t) (irc_session_t * session);
+
 
 /*!
  * \fn typedef void (*irc_event_dcc_chat_t) (irc_session_t * session, const char * nick, const char * addr, irc_dcc_t dccid)
@@ -321,6 +323,13 @@ typedef struct
      * See the params in ::irc_event_dcc_send_t specification.
 	 */
 	irc_event_dcc_send_t		event_dcc_send_req;
+        
+        /* this callback is called every iteration in the internal network loop.
+         * it could be used for printing output or other tasks that have to be
+         * done in a regular manner.
+         */
+        
+        irc_keep_alive_callback_t       keep_alive_callback;
 
 
 } irc_callbacks_t;
