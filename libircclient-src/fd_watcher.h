@@ -1,15 +1,14 @@
 
 #ifndef FD_WATCHER_H
-#define	FD_WATCHER_H
+#define FD_WATCHER_H
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
-    
+
 #define HAVE_POLL
 
-
-#define FDW_READ  0x01
+#define FDW_READ 0x01
 #define FDW_WRITE 0x02
 
 #ifndef INFTIM
@@ -32,9 +31,8 @@ int fdwatch_check_fd(int fd, uint8_t rw);
 
 void fdwatch_logstats(long secs);
 
-#ifdef	__cplusplus
+#ifdef __cplusplus
 }
 #endif
 
 #endif
-

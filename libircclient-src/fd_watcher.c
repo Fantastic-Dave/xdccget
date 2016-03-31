@@ -15,9 +15,8 @@ static uint8_t* fd_rw;
 static int nreturned, next_ridx;
 
 #ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
-
 
 #ifdef HAVE_POLL
 #include <poll.h>
@@ -25,15 +24,15 @@ static int nreturned, next_ridx;
 
 #ifdef HAVE_POLL
 
-#define WHICH                  "poll"
-#define INIT( nf )         poll_init( nf )
-#define ADD_FD( fd )       poll_add_fd( fd )
-#define DEL_FD( fd )           poll_del_fd( fd )
-#define SET_FD(fd, rw)      poll_set_fd( fd, rw )
-#define ZERO_FDS()          poll_zero();
-#define WATCH( timeout_msecs ) poll_watch( timeout_msecs )
-#define CHECK_FD( fd, rw )         poll_check_fd( fd, rw)
-#define GET_FD( ridx )         poll_get_fd( ridx )
+#define WHICH "poll"
+#define INIT(nf) poll_init(nf)
+#define ADD_FD(fd) poll_add_fd(fd)
+#define DEL_FD(fd) poll_del_fd(fd)
+#define SET_FD(fd, rw) poll_set_fd(fd, rw)
+#define ZERO_FDS() poll_zero();
+#define WATCH(timeout_msecs) poll_watch(timeout_msecs)
+#define CHECK_FD(fd, rw) poll_check_fd(fd, rw)
+#define GET_FD(ridx) poll_get_fd(ridx)
 
 static int poll_init(int nf);
 static void poll_add_fd(int fd);
@@ -41,21 +40,21 @@ static void poll_del_fd(int fd);
 static int poll_watch(long timeout_msecs);
 static int poll_check_fd(int fd, uint8_t rw);
 static void poll_set_fd(int fd, uint8_t rw);
-static void poll_zero ();
+static void poll_zero();
 
 #endif
 
 #ifdef HAVE_SELECT
 
-#define WHICH                  "select"
-#define INIT( nf )         select_init( nf )
-#define ADD_FD( fd )       select_add_fd( fd )
-#define DEL_FD( fd )           select_del_fd( fd )
-#define SET_FD(fd, rw)      select_set_fd( fd, rw )
-#define ZERO_FDS()          select_zero();
-#define WATCH( timeout_msecs ) select_watch( timeout_msecs )
-#define CHECK_FD( fd, rw )         select_check_fd( fd, rw )
-#define GET_FD( ridx )         select_get_fd( ridx )
+#define WHICH "select"
+#define INIT(nf) select_init(nf)
+#define ADD_FD(fd) select_add_fd(fd)
+#define DEL_FD(fd) select_del_fd(fd)
+#define SET_FD(fd, rw) select_set_fd(fd, rw)
+#define ZERO_FDS() select_zero();
+#define WATCH(timeout_msecs) select_watch(timeout_msecs)
+#define CHECK_FD(fd, rw) select_check_fd(fd, rw)
+#define GET_FD(ridx) select_get_fd(ridx)
 
 static int select_init(int nf);
 static void select_add_fd(int fd);
@@ -63,10 +62,9 @@ static void select_del_fd(int fd);
 static int select_watch(long timeout_msecs);
 static int select_check_fd(int fd, uint8_t rw);
 static void select_set_fd(int fd, uint8_t rw);
-static void select_zero ();
+static void select_zero();
 
-#endif 
-
+#endif
 
 /* Routines. */
 
@@ -95,14 +93,14 @@ int fdwatch_init()
     }
 #endif /* RLIMIT_NOFILE */
 
-#if defined(HAVE_SELECT) && ! ( defined(HAVE_POLL) || defined(HAVE_DEVPOLL) || defined(HAVE_KQUEUE) )
+#if defined(HAVE_SELECT) && !(defined(HAVE_POLL) || defined(HAVE_DEVPOLL) || defined(HAVE_KQUEUE))
     /* If we use select(), then we must limit ourselves to FD_SETSIZE. */
     nfiles = MIN(nfiles, FD_SETSIZE);
 #endif /* HAVE_SELECT && ! ( HAVE_POLL || HAVE_DEVPOLL || HAVE_KQUEUE ) */
 
     /* Initialize the fdwatch data structures. */
     nwatches = 0;
-    fd_rw = (uint8_t*) malloc(sizeof (uint8_t) * nfiles);
+    fd_rw = (uint8_t*)malloc(sizeof(uint8_t) * nfiles);
     if (fd_rw == NULL)
         return -1;
     for (i = 0; i < nfiles; ++i)
@@ -120,6 +118,7 @@ void fdwatch_add_fd(int fd)
         logprintf(LOG_ERR, "bad fd (%d) passed to fdwatch_add_fd!", fd);
         return;
     }
+
     ADD_FD(fd);
 }
 
@@ -130,24 +129,22 @@ void fdwatch_del_fd(int fd)
         logprintf(LOG_ERR, "bad fd (%d) passed to fdwatch_del_fd!", fd);
         return;
     }
-    
-//    DBG_OK("deleting the fd %d", fd);
-    
+
     DEL_FD(fd);
     fd_rw[fd] = 0;
 }
 
-void fdwatch_set_fd (int fd, uint8_t rw) {
+void fdwatch_set_fd(int fd, uint8_t rw)
+{
     if (fd < 0 || fd >= nfiles) {
         logprintf(LOG_ERR, "bad fd (%d) passed to fdwatch_set_fd!", fd);
         return;
     }
+
     SET_FD(fd, rw);
 }
 
-void fdwatch_zero () {
-    ZERO_FDS();
-} 
+void fdwatch_zero() { ZERO_FDS(); }
 
 /* Do the watch.  Return value is the number of descriptors that are ready,
  ** or 0 if the timeout expired, or -1 on errors.  A timeout of INFTIM means
@@ -175,12 +172,10 @@ int fdwatch_check_fd(int fd, uint8_t rw)
 void fdwatch_logstats(long secs)
 {
     if (secs > 0)
-        logprintf(
-            LOG_INFO, "  fdwatch - %ld %ss (%g/sec)",
-            nwatches, WHICH, (float) nwatches / secs);
+        logprintf(LOG_INFO, "  fdwatch - %ld %ss (%g/sec)", nwatches, WHICH,
+            (float)nwatches / secs);
     nwatches = 0;
 }
-
 
 #ifdef HAVE_POLL
 
@@ -189,7 +184,8 @@ static int npoll_fds;
 static int* poll_fdidx;
 static int* poll_rfdidx;
 
-static void poll_zero_out(int nf) {
+static void poll_zero_out(int nf)
+{
     for (int i = 0; i < nf; ++i) {
         pollfds[i].fd = poll_fdidx[i] = -1;
         pollfds[i].events = 0;
@@ -199,12 +195,11 @@ static void poll_zero_out(int nf) {
 
 static int poll_init(int nf)
 {
-    pollfds = malloc(sizeof (struct pollfd) * nf);
-    poll_fdidx = malloc(sizeof (int) * nf);
-    poll_rfdidx = malloc(sizeof (int) * nf);
-    
-    if (pollfds == (struct pollfd*) 0 || poll_fdidx == (int*) 0 ||
-            poll_rfdidx == (int*) 0)
+    pollfds = malloc(sizeof(struct pollfd) * nf);
+    poll_fdidx = malloc(sizeof(int) * nf);
+    poll_rfdidx = malloc(sizeof(int) * nf);
+
+    if (pollfds == (struct pollfd*)0 || poll_fdidx == (int*)0 || poll_rfdidx == (int*)0)
         return -1;
 
     poll_zero_out(nf);
@@ -217,7 +212,7 @@ static void poll_add_fd(int fd)
         logprintf(LOG_ERR, "too many fds in poll_add_fd!");
         return;
     }
-    
+
     pollfds[npoll_fds].fd = fd;
     poll_fdidx[fd] = npoll_fds;
     ++npoll_fds;
@@ -240,29 +235,31 @@ static void poll_del_fd(int fd)
     poll_fdidx[fd] = -1;
 }
 
-static void poll_set_fd(int fd, uint8_t rw) {
+static void poll_set_fd(int fd, uint8_t rw)
+{
     int fdidx = poll_fdidx[fd];
-    
+
     switch (rw) {
-    case FDW_READ: 
+    case FDW_READ:
         pollfds[fdidx].events |= POLLIN;
         break;
-    case FDW_WRITE: 
+    case FDW_WRITE:
         pollfds[fdidx].events |= POLLOUT;
         break;
     }
 }
 
-static void poll_zero () {
-   poll_zero_out(npoll_fds);
-   npoll_fds = 0;
+static void poll_zero()
+{
+    poll_zero_out(npoll_fds);
+    npoll_fds = 0;
 }
 
 static int poll_watch(long timeout_msecs)
 {
     int r;
 
-    r = poll(pollfds, npoll_fds, (int) timeout_msecs);
+    r = poll(pollfds, npoll_fds, (int)timeout_msecs);
     if (r <= 0)
         return r;
 
@@ -283,7 +280,7 @@ static int poll_check_fd(int fd, uint8_t rw)
 
     switch (rw) {
     case FDW_READ:
-        return  pollfds[fdidx].revents & (POLLIN);
+        return pollfds[fdidx].revents & (POLLIN);
     case FDW_WRITE:
         return pollfds[fdidx].revents & (POLLOUT);
     }
@@ -292,7 +289,6 @@ static int poll_check_fd(int fd, uint8_t rw)
 }
 
 #endif
-
 
 #ifdef HAVE_SELECT
 
@@ -307,18 +303,16 @@ static int nselect_fds;
 static int maxfd;
 static int maxfd_changed;
 
-static int
-select_init(int nf)
+static int select_init(int nf)
 {
     int i;
 
     FD_ZERO(&master_rfdset);
     FD_ZERO(&master_wfdset);
-    select_fds = (int*) malloc(sizeof (int) * nf);
-    select_fdidx = (int*) malloc(sizeof (int) * nf);
-    select_rfdidx = (int*) malloc(sizeof (int) * nf);
-    if (select_fds == (int*) 0 || select_fdidx == (int*) 0 ||
-            select_rfdidx == (int*) 0)
+    select_fds = (int*)malloc(sizeof(int) * nf);
+    select_fdidx = (int*)malloc(sizeof(int) * nf);
+    select_rfdidx = (int*)malloc(sizeof(int) * nf);
+    if (select_fds == (int*)0 || select_fdidx == (int*)0 || select_rfdidx == (int*)0)
         return -1;
     nselect_fds = 0;
     maxfd = -1;
@@ -328,15 +322,16 @@ select_init(int nf)
     return 0;
 }
 
-static void
-select_add_fd(int fd)
+static void select_add_fd(int fd)
 {
     if (nselect_fds >= nfiles) {
-        logprintf(LOG_ERR, "too many fds in select_add_fd, nfiles = %d, nselect_fds = %d!", nfiles, nselect_fds);
+        logprintf(LOG_ERR,
+            "too many fds in select_add_fd, nfiles = %d, nselect_fds = %d!",
+            nfiles, nselect_fds);
         return;
     }
     select_fds[nselect_fds] = fd;
-    
+
     if (fd > maxfd)
         maxfd = fd;
 
@@ -344,18 +339,20 @@ select_add_fd(int fd)
     ++nselect_fds;
 }
 
-static void select_set_fd(int fd, uint8_t rw) {
+static void select_set_fd(int fd, uint8_t rw)
+{
     switch (rw) {
-    case FDW_READ: 
+    case FDW_READ:
         FD_SET(fd, &master_rfdset);
         break;
-    case FDW_WRITE: 
+    case FDW_WRITE:
         FD_SET(fd, &master_wfdset);
         break;
     }
 }
 
-static void select_zero () {
+static void select_zero()
+{
     FD_ZERO(&master_rfdset);
     FD_ZERO(&master_wfdset);
     nselect_fds = 0;
@@ -363,8 +360,7 @@ static void select_zero () {
     maxfd = -1;
 }
 
-static void
-select_del_fd(int fd)
+static void select_del_fd(int fd)
 {
     int idx = select_fdidx[fd];
 
@@ -386,8 +382,7 @@ select_del_fd(int fd)
         maxfd_changed = 1;
 }
 
-static int
-select_get_maxfd(void)
+static int select_get_maxfd(void)
 {
     if (maxfd_changed) {
         int i;
@@ -400,8 +395,7 @@ select_get_maxfd(void)
     return maxfd;
 }
 
-static int
-select_watch(long timeout_msecs)
+static int select_watch(long timeout_msecs)
 {
     int mfd;
     int r;
@@ -410,15 +404,14 @@ select_watch(long timeout_msecs)
     working_wfdset = master_wfdset;
     mfd = select_get_maxfd();
     if (timeout_msecs == INFTIM)
-        r = select(
-            mfd + 1, &working_rfdset, &working_wfdset, (fd_set*) 0,
-            (struct timeval*) 0);
+        r = select(mfd + 1, &working_rfdset, &working_wfdset, (fd_set*)0,
+            (struct timeval*)0);
     else {
         struct timeval timeout;
         timeout.tv_sec = timeout_msecs / 1000L;
         timeout.tv_usec = (timeout_msecs % 1000L) * 1000L;
-        r = select(
-                mfd + 1, &working_rfdset, &working_wfdset, (fd_set*) 0, &timeout);
+        r = select(mfd + 1, &working_rfdset, &working_wfdset, (fd_set*)0,
+            &timeout);
     }
     if (r <= 0)
         return r;
@@ -426,8 +419,7 @@ select_watch(long timeout_msecs)
     return r; /* should be equal to r */
 }
 
-static int
-select_check_fd(int fd, uint8_t rw)
+static int select_check_fd(int fd, uint8_t rw)
 {
     switch (rw) {
     case FDW_READ:
@@ -441,4 +433,4 @@ select_check_fd(int fd, uint8_t rw)
     return 0;
 }
 
-#endif 
+#endif

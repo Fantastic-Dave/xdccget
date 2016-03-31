@@ -74,7 +74,11 @@ int initSslContext(irc_session_t *session) {
     //const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
 
     const char * PREFERRED_CIPHERS = "ALL:!RC4:!PSK:!SRP:!ADH:!LOW:!EXP:!MD5:!aNULL@STRENGTH";
-    const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+    long flags = SSL_OP_NO_SSLv2;
+
+#ifdef DISABLE_SSL_V3
+    flags |= SSL_OP_NO_SSLv3;
+#endif
 
     // Load the strings and init the library
     SSL_load_error_strings();
