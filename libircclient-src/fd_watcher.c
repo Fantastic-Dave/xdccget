@@ -22,6 +22,10 @@ static int nreturned, next_ridx;
 #include <poll.h>
 #endif
 
+#ifdef HAVE_EPOLL
+#include <sys/epoll.h>
+#endif
+
 #ifdef HAVE_POLL
 
 #define WHICH "poll"
@@ -32,7 +36,6 @@ static int nreturned, next_ridx;
 #define ZERO_FDS() poll_zero();
 #define WATCH(timeout_msecs) poll_watch(timeout_msecs)
 #define CHECK_FD(fd, rw) poll_check_fd(fd, rw)
-#define GET_FD(ridx) poll_get_fd(ridx)
 
 static int poll_init(int nf);
 static void poll_add_fd(int fd);
@@ -42,6 +45,26 @@ static int poll_check_fd(int fd, uint8_t rw);
 static void poll_set_fd(int fd, uint8_t rw);
 static void poll_zero();
 
+#endif
+
+#ifdef HAVE_EPOLL
+#define WHICH "epoll"
+#define INIT(nf) epoll_init(nf)
+#define ADD_FD(fd) epoll_add_fd(fd)
+#define DEL_FD(fd) epoll_del_fd(fd)
+#define SET_FD(fd, rw) epoll_set_fd(fd, rw)
+#define ZERO_FDS() epoll_zero();
+#define WATCH(timeout_msecs) epoll_watch(timeout_msecs)
+#define CHECK_FD(fd, rw) epoll_check_fd(fd, rw)
+
+
+static int epoll_init(int nf);
+static void epoll_add_fd(int fd);
+static void epoll_del_fd(int fd);
+static int epoll_watch(long timeout_msecs);
+static int epoll_check_fd(int fd, uint8_t rw);
+static void epoll_set_fd(int fd, uint8_t rw);
+static void epoll_zero();
 #endif
 
 #ifdef HAVE_SELECT
@@ -54,7 +77,6 @@ static void poll_zero();
 #define ZERO_FDS() select_zero();
 #define WATCH(timeout_msecs) select_watch(timeout_msecs)
 #define CHECK_FD(fd, rw) select_check_fd(fd, rw)
-#define GET_FD(ridx) select_get_fd(ridx)
 
 static int select_init(int nf);
 static void select_add_fd(int fd);
@@ -283,6 +305,140 @@ static int poll_check_fd(int fd, uint8_t rw)
         return pollfds[fdidx].revents & (POLLIN);
     case FDW_WRITE:
         return pollfds[fdidx].revents & (POLLOUT);
+    }
+
+    return 0;
+}
+
+#endif
+
+#ifdef HAVE_EPOLL
+
+static int max_events = -1;
+static struct epoll_event* events;
+static struct epoll_event* resulting_events;
+static int npoll_fds;
+static int* poll_fdidx;
+static int epoll_fd = -1;
+static int watched_events = -1;
+
+static void epoll_zero_out(int nf)
+{
+    for (int i = 0; i < nf; i++) {
+        poll_fdidx[i] = -1;
+        events[i].events = 0;
+    }
+}
+
+static int epoll_init(int nf)
+{
+    events = malloc(sizeof(struct epoll_event) * nf);
+    resulting_events = malloc(sizeof(struct epoll_event) * nf);
+    poll_fdidx = malloc(sizeof(int) * nf);
+    max_events = nf;
+
+    if (events == NULL || poll_fdidx == NULL)
+        return -1;
+    
+    epoll_fd = epoll_create1(0);
+    
+    if (epoll_fd == -1) {
+        return -1;
+    }
+    
+    epoll_zero_out(nf);
+    return 0;
+}
+
+static void epoll_add_fd(int fd)
+{
+    if (npoll_fds >= nfiles) {
+        logprintf(LOG_ERR, "too many fds in poll_add_fd!");
+        return;
+    }
+
+    events[npoll_fds].data.fd = fd;
+    events[npoll_fds].events = 0;
+    int ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &events[npoll_fds]);
+    if (ret == -1) {
+        DBG_WARN("epoll_ctl failed with fd = %d", fd);
+        return;
+    }
+    poll_fdidx[fd] = npoll_fds;
+    ++npoll_fds;
+}
+
+static void epoll_del_fd(int fd)
+{
+    int idx = poll_fdidx[fd];
+
+    if (idx < 0 || idx >= nfiles) {
+        logprintf(LOG_ERR, "bad idx (%d) in poll_del_fd!", idx);
+        return;
+    }
+    
+    int ret = epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, &events[idx]);
+    if (ret == -1) {
+        DBG_WARN("epoll_ctl failed with fd = %d", fd);
+        return;
+    }
+    
+    --npoll_fds;
+    events[idx].data.fd = -1;
+    poll_fdidx[fd] = -1;
+}
+
+static void epoll_set_fd(int fd, uint8_t rw)
+{
+    int fdidx = poll_fdidx[fd];
+
+    switch (rw) {
+    case FDW_READ:
+        events[fdidx].events |= EPOLLIN | EPOLLET;
+        break;
+    case FDW_WRITE:
+        events[fdidx].events |= EPOLLOUT;
+        break;
+    }
+    
+    int ret = epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &events[fdidx]);
+    if (ret == -1) {
+        DBG_WARN("epoll_ctl failed with fd = %d", fd);
+        return;
+    }
+    
+}
+
+static void epoll_zero()
+{
+    epoll_zero_out(npoll_fds);
+    npoll_fds = 0;
+}
+
+static int epoll_watch(long timeout_msecs)
+{
+    watched_events = epoll_wait(epoll_fd, resulting_events, max_events, (int)timeout_msecs);
+    return watched_events;
+}
+
+static int epoll_check_fd(int fd, uint8_t rw)
+{
+    int fdidx = poll_fdidx[fd];
+
+    if (fdidx < 0 || fdidx >= nfiles) {
+        logprintf(LOG_ERR, "bad fdidx (%d) in poll_check_fd!", fdidx);
+        return 0;
+    }
+    
+    for (int i = 0; i < watched_events; i++) {
+        if (resulting_events[i].data.fd == fd) {
+            switch (rw) {
+                case FDW_READ:
+                    return resulting_events[i].events & (EPOLLIN);
+                case FDW_WRITE:
+                    return resulting_events[i].events & (EPOLLOUT);
+                }
+            }
     }
 
     return 0;

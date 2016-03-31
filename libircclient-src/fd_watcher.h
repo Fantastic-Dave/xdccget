@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#define HAVE_POLL
+#define HAVE_EPOLL
 
 #define FDW_READ 0x01
 #define FDW_WRITE 0x02

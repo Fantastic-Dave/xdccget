@@ -86,12 +86,17 @@ void interrupt_handler(int signum) {
 
 void output_all_progesses() {
     unsigned int i;
+    
+    if (downloadNumber < 1) {
+        printf("Please wait until the download is started!\r");
+    }
+    else {
+        for (i = 0; i < downloadNumber; i++) {
+            outputProgress(downloadContext[i]->progress);
 
-    for (i = 0; i < downloadNumber; i++) {
-        outputProgress(downloadContext[i]->progress);
-
-        if (downloadNumber != 1) {
-            printf("\n");
+            if (downloadNumber != 1) {
+                printf("\n");
+            }
         }
     }
 
@@ -413,7 +418,7 @@ void callback_dcc_resume_file (irc_session_t * session, irc_dcc_t dccid, int sta
         logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
         exitPgm(EXIT_FAILURE);
     }
-    alarm(1);
+//    alarm(1);
     DBG_OK("after irc_dcc_accept!\n");
 }
 
@@ -484,7 +489,7 @@ accept_flag:
             logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
             exitPgm(EXIT_FAILURE);
         }
-        alarm(1);
+//        alarm(1);
     }
 
     sdsfree(fileName);
@@ -606,6 +611,8 @@ int main (int argc, char **argv)
         exitPgm(EXIT_FAILURE);
     }
 
+    alarm(1);
+    
     ret = irc_run (cfg.session);
 
     if (ret != 0) {
