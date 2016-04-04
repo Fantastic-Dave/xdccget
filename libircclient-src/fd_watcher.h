@@ -5,8 +5,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+    
+#if !defined(HAVE_SELECT) && !defined(HAVE_POLL) && !defined(HAVE_EPOLL)
+#warning "you have not defined HAVE_SELECT, HAVE_POLL or HAVE_EPOLL, therefore using HAVE_SELECT at fdwatcher"
 #define HAVE_SELECT
+#endif
 
 #define FDW_READ 0x01
 #define FDW_WRITE 0x02
