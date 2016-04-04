@@ -36,6 +36,7 @@ static int nreturned, next_ridx;
 #define ZERO_FDS() poll_zero();
 #define WATCH(timeout_msecs) poll_watch(timeout_msecs)
 #define CHECK_FD(fd, rw) poll_check_fd(fd, rw)
+#define FREE_FD_WATCHER() poll_free();
 
 static int poll_init(int nf);
 static void poll_add_fd(int fd);
@@ -44,6 +45,7 @@ static int poll_watch(long timeout_msecs);
 static int poll_check_fd(int fd, uint8_t rw);
 static void poll_set_fd(int fd, uint8_t rw);
 static void poll_zero();
+static void poll_free();
 
 #endif
 
@@ -56,6 +58,7 @@ static void poll_zero();
 #define ZERO_FDS() epoll_zero();
 #define WATCH(timeout_msecs) epoll_watch(timeout_msecs)
 #define CHECK_FD(fd, rw) epoll_check_fd(fd, rw)
+#define FREE_FD_WATCHER() epoll_free();
 
 
 static int epoll_init(int nf);
@@ -65,6 +68,7 @@ static int epoll_watch(long timeout_msecs);
 static int epoll_check_fd(int fd, uint8_t rw);
 static void epoll_set_fd(int fd, uint8_t rw);
 static void epoll_zero();
+static void epoll_free();
 #endif
 
 #ifdef HAVE_SELECT
@@ -77,6 +81,7 @@ static void epoll_zero();
 #define ZERO_FDS() select_zero();
 #define WATCH(timeout_msecs) select_watch(timeout_msecs)
 #define CHECK_FD(fd, rw) select_check_fd(fd, rw)
+#define FREE_FD_WATCHER() select_free();
 
 static int select_init(int nf);
 static void select_add_fd(int fd);
@@ -85,7 +90,7 @@ static int select_watch(long timeout_msecs);
 static int select_check_fd(int fd, uint8_t rw);
 static void select_set_fd(int fd, uint8_t rw);
 static void select_zero();
-
+static void select_free();
 #endif
 
 /* Routines. */
@@ -131,6 +136,11 @@ int fdwatch_init()
         return -1;
 
     return nfiles;
+}
+
+void fdwatch_free() {
+    free(fd_rw);
+    FREE_FD_WATCHER();
 }
 
 /* Add a descriptor to the watch list.  rw is either FDW_READ or FDW_WRITE.  */
@@ -226,6 +236,13 @@ static int poll_init(int nf)
 
     poll_zero_out(nf);
     return 0;
+}
+
+
+static void poll_free() {
+    free(pollfds);
+    free(poll_fdidx);
+    free(poll_rfdidx);
 }
 
 static void poll_add_fd(int fd)
@@ -348,6 +365,13 @@ static int epoll_init(int nf)
     
     epoll_zero_out(nf);
     return 0;
+}
+
+static void epoll_free() {
+    free(events);
+    free(resulting_events);
+    free(poll_fdidx);
+    close(epoll_fd);
 }
 
 static void epoll_add_fd(int fd)
@@ -476,6 +500,12 @@ static int select_init(int nf)
     for (i = 0; i < nf; ++i)
         select_fds[i] = select_fdidx[i] = -1;
     return 0;
+}
+
+static void select_free() {
+    free(select_fds);
+    free(select_fdidx);
+    free(select_rfdidx);
 }
 
 static void select_add_fd(int fd)

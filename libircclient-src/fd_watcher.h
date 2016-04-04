@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#define HAVE_EPOLL
+#define HAVE_SELECT
 
 #define FDW_READ 0x01
 #define FDW_WRITE 0x02
@@ -16,6 +16,8 @@ extern "C" {
 #endif
 
 int fdwatch_init();
+
+void fdwatch_free();
 
 void fdwatch_add_fd(int fd);
 

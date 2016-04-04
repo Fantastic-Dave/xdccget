@@ -56,6 +56,7 @@ irc_session_t * irc_create_session(irc_callbacks_t * callbacks) {
     if (!session->callbacks.event_ctcp_req)
         session->callbacks.event_ctcp_req = libirc_event_ctcp_internal;
 
+    fdwatch_init();   
     session->line_parser = create_line_parser();
     line_parser_set_session(session->line_parser, session);
 
@@ -102,6 +103,7 @@ void irc_destroy_session(irc_session_t * session) {
         libirc_remove_dcc_session(session, session->dcc_sessions, 0);
 
     free_line_parser(session->line_parser);
+    fdwatch_free();
 
 #ifdef ENABLE_SSL
     if (session->ssl)
@@ -366,12 +368,9 @@ int irc_run(irc_session_t * session) {
         session->lasterror = LIBIRC_ERR_STATE;
         return 1;
     }
-    
-    fdwatch_init();
-    
 
     while (irc_is_connected(session)) {
-        long timeout_ms = 750;
+        const long timeout_ms = 750;
 
         fdwatch_zero();
         fdwatch_add_fd(session->sock);
