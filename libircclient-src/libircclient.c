@@ -125,22 +125,19 @@ static inline bool isConnectionEstablished(const irc_session_t *session) {
 }
 
 static bool hasConnection(const irc_session_t *session) {
-    fd_set out_set;
-    struct timeval timeout;
-    int maxfd = 0;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
+    const long timeout_ms = 5000;
+    
+    fdwatch_zero();
+    fdwatch_add_fd(session->sock);
+    fdwatch_set_fd(session->sock, FDW_WRITE);
+    fdwatch(timeout_ms);
 
-    FD_ZERO(&out_set);
-    libirc_add_to_set(session->sock, &out_set, &maxfd);
-    select(maxfd + 1, NULL, &out_set, NULL, &timeout);
-
-    if (FD_ISSET(session->sock, &out_set)) {
+   if (fdwatch_check_fd(session->sock, FDW_WRITE)) {
         if (isConnectionEstablished(session)) {
             return true;
         }
     } else {
-        DBG_WARN("got nothing at fd_isset at connect!");
+        DBG_WARN("got nothing at fdwatch_check_fd at connect!");
     }
 
     return false;

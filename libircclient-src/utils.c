@@ -17,24 +17,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void libirc_add_to_set (int fd, fd_set *set, int * maxfd)
-{
-	FD_SET (fd, set);
-
-	if ( *maxfd < fd )
-		*maxfd = fd;
-}
-
-#if defined (ENABLE_DEBUG)
-static void libirc_dump_data (const char * prefix, const char * buf, unsigned int length)
-{
-	printf ("%s: ", prefix);
-	for ( ; length > 0; length -- )
-		printf ("%c", *buf++);
-}
-#endif
-
-
 /*
  * Finds a separator (\x0D\x0A), which separates two lines.
  */
