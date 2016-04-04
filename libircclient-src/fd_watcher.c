@@ -231,7 +231,7 @@ static int poll_init(int nf)
     poll_fdidx = malloc(sizeof(int) * nf);
     poll_rfdidx = malloc(sizeof(int) * nf);
 
-    if (pollfds == (struct pollfd*)0 || poll_fdidx == (int*)0 || poll_rfdidx == (int*)0)
+    if (pollfds == NULL || poll_fdidx == NULL || poll_rfdidx == NULL)
         return -1;
 
     poll_zero_out(nf);
@@ -489,10 +489,10 @@ static int select_init(int nf)
 
     FD_ZERO(&master_rfdset);
     FD_ZERO(&master_wfdset);
-    select_fds = (int*)malloc(sizeof(int) * nf);
-    select_fdidx = (int*)malloc(sizeof(int) * nf);
-    select_rfdidx = (int*)malloc(sizeof(int) * nf);
-    if (select_fds == (int*)0 || select_fdidx == (int*)0 || select_rfdidx == (int*)0)
+    select_fds = malloc(sizeof(int) * nf);
+    select_fdidx = malloc(sizeof(int) * nf);
+    select_rfdidx = malloc(sizeof(int) * nf);
+    if (select_fds == NULL || select_fdidx == NULL || select_rfdidx == NULL)
         return -1;
     nselect_fds = 0;
     maxfd = -1;
@@ -602,7 +602,7 @@ static int select_watch(long timeout_msecs)
     if (r <= 0)
         return r;
 
-    return r; /* should be equal to r */
+    return r;
 }
 
 static int select_check_fd(int fd, uint8_t rw)
