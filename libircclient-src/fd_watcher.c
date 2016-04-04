@@ -157,7 +157,7 @@ void fdwatch_add_fd(int fd)
 /* Remove a descriptor from the watch list. */
 void fdwatch_del_fd(int fd)
 {
-    if (fd < 0 || fd >= nfiles || fd_rw[fd] == -1) {
+    if (fd < 0 || fd >= nfiles) {
         logprintf(LOG_ERR, "bad fd (%d) passed to fdwatch_del_fd!", fd);
         return;
     }
