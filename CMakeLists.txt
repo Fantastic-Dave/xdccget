@@ -20,6 +20,20 @@ add_definitions(-DDEBUG)
 add_definitions(-DFILE_API)
 add_definitions(-DENABLE_IPV6)
 add_definitions(-D_FILE_OFFSET_BITS=64)
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+   add_definitions(-DHAVE_POLL)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+   add_definitions(-DHAVE_POLL)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "CYGWIN")
+   add_definitions(-DHAVE_POLL)
+endif()
+
+
 include_directories(libircclient-include)
 
 set(SOURCE_FILES

@@ -15,11 +15,11 @@
 #include <ctype.h>
 
 #define LIBIRC_COLORPARSER_BOLD			(1<<1)
-#define LIBIRC_COLORPARSER_UNDERLINE	(1<<2)
+#define LIBIRC_COLORPARSER_UNDERLINE            (1<<2)
 #define LIBIRC_COLORPARSER_REVERSE		(1<<3)
 #define LIBIRC_COLORPARSER_COLOR		(1<<4)
 
-#define LIBIRC_COLORPARSER_MAXCOLORS	15
+#define LIBIRC_COLORPARSER_MAXCOLORS            15
 
 
 static const char * color_replacement_table[] ={
@@ -46,7 +46,7 @@ static inline void libirc_colorparser_addorcat(char ** destline, unsigned int * 
     unsigned int len = strlen(str);
 
     if (*destline) {
-        strcpy(*destline, str);
+        strncpy(*destline, str, len);
         *destline += len;
     }
     else
