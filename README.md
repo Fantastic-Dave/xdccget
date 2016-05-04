@@ -40,6 +40,7 @@ If your irc-network supports ssl you can even use an secure ssl-connection with 
 xdccget -i -p 1338 "#irc.sampel.net" "#best-channel" "super-duper-bot xdcc send #34"
 ``` 
 
+Notice the #-character in front of irc.sampel.net. This tells xdccget to use ssl/tls on the connection to the irc-server.
 If the bot even supports ssl than you can use the ssend-command to use an ssl-encrypted connection with the bot.
 So for example if the *super-duper-bot* would support ssl-connection, then we could call xdccget like:
 
@@ -49,6 +50,12 @@ xdccget -i -p 1338 "#irc.sampel.net" "#best-channel" "super-duper-bot xdcc ssend
 
 Notice the *xdcc ssend* command instead of *xdcc send*. This tells the bot that we want connect to him with ssl 
 enabled.
+
+You can also join multiple channels, so if you also have to join #best-chat-channel in order to download packages from #best-channel, then you can call xdccget like:
+
+``` 
+xdccget -i "irc.sampel.net" "#best-channel, #best-chat-channel" "super-duper-bot xdcc send #34"
+``` 
 
 This is the basic usage of xdccget. You can call xdccget --help to understand all currently supported arguments.
 xdccget also uses a config file, which will be placed at your homefolder in .xdccget/config. You can modify
