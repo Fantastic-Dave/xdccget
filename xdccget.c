@@ -438,18 +438,31 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
         exitPgm(EXIT_FAILURE);
     }
     
-    sds completePath = sdsempty();
     sds lastCharOfTargetDir = sdsdup(cfg.targetDir);
-    sdsrange(lastCharOfTargetDir, -2, -1);
+    sdsrange(lastCharOfTargetDir, -1, -1);
+    sds absolutePath = sdsempty();
     
     if (!str_equals(lastCharOfTargetDir, getPathSeperator())) {
-        completePath = sdscatprintf(completePath, "%s%s%s", cfg.targetDir, getPathSeperator(), fileName);
+        DBG_OK("last char of dir was: %s", lastCharOfTargetDir);
+        absolutePath = sdscatprintf(absolutePath, "%s%s", cfg.targetDir, getPathSeperator());
     }
     else {
-        completePath = sdscatprintf(completePath, "%s%s", cfg.targetDir, fileName);
+        absolutePath = sdscatprintf(absolutePath, "%s", cfg.targetDir);
     }
     
+    if (!dir_exists(absolutePath)) {
+        logprintf(LOG_INFO, "Creating following folder to store downloads: %s", absolutePath);
+        if (mkdir(absolutePath, 0755) == -1) {
+            DBG_WARN("cant create dir %s", absolutePath);
+            perror("mkdir");
+        }
+    }
+    
+    sds completePath = sdsempty();
+    completePath = sdscatprintf(completePath, "%s%s", absolutePath, fileName);
+    
     sdsfree(lastCharOfTargetDir);
+    sdsfree(absolutePath);
     
     struct dccDownloadProgress *progress = newDccProgress(completePath, size);
     curDownload = progress;
