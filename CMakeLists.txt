@@ -1,16 +1,15 @@
 cmake_minimum_required(VERSION 2.7)
 project(xdccget)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors -Os  -std=gnu11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wfatal-errors -Os -std=gnu11 -fstack-protector")
 
-find_package(PkgConfig REQUIRED)
-pkg_search_module(OPENSSL REQUIRED openssl)
+find_package(OpenSSL REQUIRED)
 
 if( OPENSSL_FOUND )
-    include_directories(${OPENSSL_INCLUDE_DIRS})
+    include_directories(${OPENSSL_INCLUDE_DIR})
     message(STATUS "Using OpenSSL ${OPENSSL_VERSION}")
 else()
-    # Error; with REQUIRED, pkg_search_module() will throw an error by it's own
+    message(FATAL_ERROR "OpenSSL is required for building xdccget!")
 endif()
 
 find_package (Threads)
