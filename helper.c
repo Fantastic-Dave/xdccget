@@ -289,11 +289,8 @@ static void print_validation_errstr(long verify_result) {
 }
 
 int openssl_check_certificate_callback(int verify_result, X509_STORE_CTX *ctx) {
-    SSL *ssl;
     X509* cert =ctx->cert;
     struct xdccGetConfig *cfg = getCfg();
-
-    ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     
     if (cert == NULL) {
         logprintf(LOG_ERR, "Got no certificate from the server.");
