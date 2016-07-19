@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef ENABLE_SSL
     #include <openssl/ssl.h>
@@ -81,20 +82,21 @@ do {\
 #define bitset_t uint64_t
 
 struct xdccGetConfig {
-    int logLevel;
-    char *ircServer;
-    unsigned short port;
-    int numChannels;
-    sds *channelsToJoin;
-    unsigned int numDownloads;
-    struct dccDownload **dccDownloadArray;
-    bool sended;
     irc_session_t *session;
+    struct dccDownload **dccDownloadArray;
+    uint32_t numDownloads;
+    bitset_t flags;
+    
+    char *ircServer;
+    sds *channelsToJoin;
     sds targetDir;
     sds nick;
     sds login_command;
     char *args[3];
-    bitset_t flags;
+    
+    uint32_t numChannels;
+    uint16_t port;
+    uint8_t logLevel;
 };
 
 #define OUTPUT_FLAG             0x01
@@ -102,6 +104,7 @@ struct xdccGetConfig {
 #define USE_IPV4_FLAG           0x03
 #define USE_IPV6_FLAG	        0x04
 #define VERIFY_CHECKSUM_FLAG    0x05
+#define SENDED_FLAG             0x06
 
 
 struct terminalDimension {

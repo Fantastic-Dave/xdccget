@@ -29,7 +29,7 @@ void freeDccProgress(struct dccDownloadProgress *progress);
 
 void parseDccDownload (char *dccDownloadString, char **nick, char **xdccCmd);
 
-sds* parseChannels(char *channelString, int *numChannels);
+sds* parseChannels(char *channelString, uint32_t *numChannels);
 
 struct dccDownload** parseDccDownloads(char *dccDownloadString, unsigned int *numDownloads);
 

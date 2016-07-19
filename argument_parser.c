@@ -182,7 +182,7 @@ void parseDccDownload(char *dccDownloadString, sds *nick, sds *xdccCmd) {
     *xdccCmd = xdccPtr;
 }
 
-sds* parseChannels(char *channelString, int *numChannels) {
+sds* parseChannels(char *channelString, uint32_t *numChannels) {
     int numFound = 0;
     char *seperator = ",";
     sds *splittedString = sdssplitlen(channelString, strlen(channelString), seperator, strlen(seperator), &numFound);

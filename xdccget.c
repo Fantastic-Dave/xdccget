@@ -226,7 +226,7 @@ static void join_channels(irc_session_t *session) {
 
 static void send_xdcc_requests(irc_session_t *session) {
     int i;
-    if (!cfg.sended) {
+    if (!cfg_get_bit(&cfg, SENDED_FLAG)) {
         for (i = 0; cfg.dccDownloadArray[i] != NULL; i++) {
             char *botNick = cfg.dccDownloadArray[i]->botNick;
             char *xdccCommand = cfg.dccDownloadArray[i]->xdccCmd;
@@ -239,7 +239,7 @@ static void send_xdcc_requests(irc_session_t *session) {
             }
         }
 
-        cfg.sended = true;
+        cfg_set_bit(&cfg, SENDED_FLAG);
     }
 }
 
