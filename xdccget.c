@@ -19,11 +19,11 @@
 
 static struct xdccGetConfig cfg;
 
-uint32_t numActiveDownloads = 0;
-uint32_t finishedDownloads = 0;
-struct dccDownloadContext **downloadContext = NULL;
-struct dccDownloadProgress *lastDownload = NULL;
-struct dccDownloadProgress *curDownload = NULL;
+static uint32_t numActiveDownloads = 0;
+static uint32_t finishedDownloads = 0;
+static struct dccDownloadContext **downloadContext = NULL;
+static struct dccDownloadProgress *lastDownload = NULL;
+static struct dccDownloadProgress *curDownload = NULL;
 
 struct xdccGetConfig *getCfg() {
     return &cfg;
