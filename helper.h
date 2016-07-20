@@ -83,6 +83,7 @@ do {\
 
 struct xdccGetConfig {
     irc_session_t *session;
+    uint32_t logLevel;
     struct dccDownload **dccDownloadArray;
     uint32_t numDownloads;
     bitset_t flags;
@@ -96,7 +97,6 @@ struct xdccGetConfig {
     
     uint32_t numChannels;
     uint16_t port;
-    uint8_t logLevel;
 };
 
 #define OUTPUT_FLAG             0x01
