@@ -62,23 +62,17 @@ include_directories(libircclient-include)
 set(SOURCE_FILES
     libircclient-src/libircclient.c
     argument_parser.c
-    argument_parser.h
     config.c
-    config.h
     dirs.c
     dirs.h
     file.c
-    file.h
     helper.c
-    helper.h
     sds.c
-    sds.h
     xdccget.c
-    xdccget.h
     hashing_algo.c
     sph_md5.c)
 
-add_executable(xdccget ${SOURCE_FILES} libircclient-src/portable_endian.h)
+add_executable(xdccget ${SOURCE_FILES})
 target_link_libraries(xdccget ${OPENSSL_LIBRARIES})
 target_link_libraries (xdccget ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries (xdccget ${ARGP_LIBRARIES})
