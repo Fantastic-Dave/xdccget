@@ -223,10 +223,10 @@ void md5_final_sph(void *context, uchar hash[]) {
 }
 
 char* md5_toString(unsigned char *hash) {
- int idx;
- for (idx = 0; idx < MD5_SIZE; idx++) {
-  sprintf(toStringBuffer + idx * 2, "%02x", hash[idx]);
- }
- toStringBuffer[MD5_SIZE * 2] = (char) 0;
- return toStringBuffer;
+	int idx;
+	for (idx = 0; idx < MD5_SIZE; idx++) {
+ 		snprintf(toStringBuffer + idx * 2, 2, "%02x", hash[idx]);
+ 	}
+	toStringBuffer[MD5_SIZE * 2] = (char) 0;
+	return toStringBuffer;
 }
