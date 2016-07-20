@@ -608,7 +608,7 @@ int irc_send_raw(irc_session_t * session, const char * format, ...) {
         return 1;
     }
 
-    strcpy(session->outgoing_buf + session->outgoing_offset, buf);
+    strncpy(session->outgoing_buf + session->outgoing_offset, buf, strlen(buf));
     session->outgoing_offset += strlen(buf);
     session->outgoing_buf[session->outgoing_offset++] = 0x0D;
     session->outgoing_buf[session->outgoing_offset++] = 0x0A;
