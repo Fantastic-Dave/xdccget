@@ -19,8 +19,8 @@
 
 static struct xdccGetConfig cfg;
 
-unsigned int downloadNumber = 0;
-unsigned int finishedDownloads = 0;
+uint32_t numActiveDownloads = 0;
+uint32_t finishedDownloads = 0;
 struct dccDownloadContext **downloadContext = NULL;
 struct dccDownloadProgress *lastDownload = NULL;
 struct dccDownloadProgress *curDownload = NULL;
@@ -87,14 +87,14 @@ void interrupt_handler(int signum) {
 void output_all_progesses() {
     unsigned int i;
     
-    if (downloadNumber < 1) {
+    if (numActiveDownloads < 1) {
         printf("Please wait until the download is started!\r");
     }
     else {
-        for (i = 0; i < downloadNumber; i++) {
+        for (i = 0; i < numActiveDownloads; i++) {
             outputProgress(downloadContext[i]->progress);
 
-            if (downloadNumber != 1) {
+            if (numActiveDownloads != 1) {
                 printf("\n");
             }
         }
@@ -102,7 +102,7 @@ void output_all_progesses() {
 
     fflush(stdout);
 
-    if (downloadNumber == 1) {
+    if (numActiveDownloads == 1) {
         /* send \r so that we override this line the next time...*/
         printf("\r");
     }
@@ -395,7 +395,7 @@ void callback_dcc_recv_file(irc_session_t * session, irc_dcc_t id, int status, v
         finishedDownloads++;
         
         if (!(cfg_get_bit(&cfg, VERIFY_CHECKSUM_FLAG))) {
-            if (finishedDownloads == downloadNumber) {
+            if (finishedDownloads == numActiveDownloads) {
                 irc_cmd_quit(cfg.session, "Goodbye!");
             }
         }
@@ -468,8 +468,8 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
     curDownload = progress;
 
     struct dccDownloadContext *context = Malloc(sizeof(struct dccDownloadContext));
-    downloadContext[downloadNumber] = context;
-    downloadNumber++;
+    downloadContext[numActiveDownloads] = context;
+    numActiveDownloads++;
     context->progress = progress;
 
     DBG_OK("nick at recvFileReq is %s\n", nick);
