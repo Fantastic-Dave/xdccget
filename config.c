@@ -61,11 +61,17 @@ static void parseLogLevel(struct xdccGetConfig *config, sds logLevel) {
 
 static sds getDefaultConfigContent() {
     sds downloadDir = sdscatprintf(sdsempty(), "%s%s%s", getHomeDir(), getPathSeperator(), "Downloads");
+    sds content = sdsempty();
 
-    sds content = sdscatprintf(sdsempty(), "downloadDir=%s\n", downloadDir);
+    content = sdscatprintf(content, "# default directory where to store the downloads\n");
+    content = sdscatprintf(content, "downloadDir=%s\n", downloadDir);
+    content = sdscatprintf(content, "# default logging level, valid options: information, warn, error, quiet\n");
     content = sdscatprintf(content, "logLevel=information\n");
+    content = sdscatprintf(content, "# allow all certificates and dont validate them\n");
     content = sdscatprintf(content, "allowAllCerts=true\n");
-
+    content = sdscatprintf(content, "# stay connected after downloads finished to automatically verify checksums\n");
+    content = sdscatprintf(content, "verifyChecksums=false\n");
+    
     sdsfree(downloadDir);
 
     return content;
