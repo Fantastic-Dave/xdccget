@@ -111,9 +111,6 @@ void output_all_progesses() {
 void output_handler (int signum) {
     alarm(1);
     cfg_set_bit(getCfg(), OUTPUT_FLAG);
-#if 0
-    output_all_progesses();
-#endif
 }
 
 void* checksum_verification_thread(void *args) {
@@ -418,7 +415,7 @@ void callback_dcc_resume_file (irc_session_t * session, irc_dcc_t dccid, int sta
         logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
         exitPgm(EXIT_FAILURE);
     }
-//    alarm(1);
+
     DBG_OK("after irc_dcc_accept!\n");
 }
 
@@ -502,7 +499,6 @@ accept_flag:
             logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
             exitPgm(EXIT_FAILURE);
         }
-//        alarm(1);
     }
 
     sdsfree(fileName);
