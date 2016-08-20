@@ -30,7 +30,7 @@ struct xdccGetConfig *getCfg() {
 }
 
 void doCleanUp() {
-#ifndef WINDOWS_BUILD 
+#ifndef WINDOWS_BUILD
     int i;
     if (cfg.session)
         irc_destroy_session(cfg.session);
@@ -42,11 +42,11 @@ void doCleanUp() {
     for (i = 0; cfg.dccDownloadArray[i]; i++) {
         freeDccDownload(cfg.dccDownloadArray[i]);
     }
-    
+
     for (i = 0; downloadContext[i]; i++) {
         struct dccDownloadContext *current_context = downloadContext[i];
         struct dccDownloadProgress *current_progress = current_context->progress;
-        
+
         if (current_progress != NULL) {
             bool finishedDownloading = current_progress->sizeRcvd == current_progress->completeFileSize;
 
@@ -57,7 +57,7 @@ void doCleanUp() {
 
             freeDccProgress(current_context->progress);
         }
-        
+
         FREE(downloadContext[i]);
     }
 
@@ -86,7 +86,7 @@ void interrupt_handler(int signum) {
 
 void output_all_progesses() {
     unsigned int i;
-    
+
     if (numActiveDownloads < 1) {
         printf("Please wait until the download is started!\r");
     }
@@ -203,7 +203,7 @@ void dump_event (irc_session_t * session, const char * event, irc_parser_result_
     for (cnt = 0; cnt < result->num_params; cnt++) {
         if (cnt)
             param_string = sdscat(param_string, "|");
-        
+
         char *message_without_color_codes = irc_color_strip_from_mirc(result->params[cnt]);
         param_string = sdscat(param_string, message_without_color_codes);
         free(message_without_color_codes);
@@ -246,7 +246,7 @@ static inline bool isPasswordAccepted(const char *message) {
         "You are now identified",
         "I recognize you"
     };
-    
+
     size_t num_sequences = sizeof(password_sequences) / sizeof(const char*);
     for (size_t i = 0; i < num_sequences; i++) {
         char *t = strstr(message, password_sequences[i]);
@@ -254,7 +254,7 @@ static inline bool isPasswordAccepted(const char *message) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -269,7 +269,7 @@ void event_mode(irc_session_t * session, const char * event, irc_parser_result_t
             send_xdcc_requests(session);
         }
     }
-    
+
 }
 
 void event_umode(irc_session_t * session, const char * event, irc_parser_result_t *result) {
@@ -292,7 +292,7 @@ void event_join (irc_session_t * session, const char * event, irc_parser_result_
 
 static void send_login_command(irc_session_t *session) {
     cfg.login_command = sdstrim(cfg.login_command, " \t");
-    
+
     if (sdslen(cfg.login_command) >= 9) {
         sds user = sdsdup(cfg.login_command);
         sds auth_command = sdsdup(cfg.login_command);
@@ -322,10 +322,10 @@ void event_connect (irc_session_t *session, const char * event, irc_parser_resul
 #ifdef ENABLE_SSL
     logprintf(LOG_INFO, "using cipher suite: %s", irc_get_ssl_ciphers_used(session));
 #endif
-    
+
     if (cfg.login_command != NULL) {
         send_login_command(session);
-    }    
+    }
     else {
         join_channels(session);
     }
@@ -334,7 +334,7 @@ void event_connect (irc_session_t *session, const char * event, irc_parser_resul
 
 void event_privmsg (irc_session_t * session, const char * event, irc_parser_result_t *result)
 {
-	
+
     dump_event (session, event, result);
 
     printf ("'%s' said me (%s): %s\n", 
@@ -388,9 +388,9 @@ void callback_dcc_recv_file(irc_session_t * session, irc_dcc_t id, int status, v
 
         Close(context->fd);
         context->fd = NULL;
-        
+
         finishedDownloads++;
-        
+
         if (!(cfg_get_bit(&cfg, VERIFY_CHECKSUM_FLAG))) {
             if (finishedDownloads == numActiveDownloads) {
                 irc_cmd_quit(cfg.session, "Goodbye!");
@@ -410,7 +410,7 @@ void callback_dcc_resume_file (irc_session_t * session, irc_dcc_t dccid, int sta
     tdp->sizeRcvd = length;
 
     int ret = irc_dcc_accept (session, dccid, ctx, callback_dcc_recv_file);
-    
+
     if (ret != 0) {
         logprintf(LOG_ERR, "Could not connect to bot\nError was: %s\n", irc_strerror(irc_errno(cfg.session)));
         exitPgm(EXIT_FAILURE);
@@ -423,7 +423,7 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
 {
     DBG_OK("DCC send [%d] requested from '%s' (%s): %s (%" IRC_DCC_SIZE_T_FORMAT " bytes)\n", dccid, nick, addr, filename, size);
 
-    sds fileName = sdsnew(filename);	
+    sds fileName = sdsnew(filename);
 
     /* chars / and \ are not permitted to appear in a valid filename. if someone wants to send us such a file 
        then something is definately wrong. so just exit pgm then and print error msg to user.*/
@@ -434,11 +434,11 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
         logprintf(LOG_ERR, "Someone wants to send us a file that contains / or \\. This is not permitted.\nFilename was: %s", fileName);
         exitPgm(EXIT_FAILURE);
     }
-    
+
     sds lastCharOfTargetDir = sdsdup(cfg.targetDir);
     sdsrange(lastCharOfTargetDir, -1, -1);
     sds absolutePath = sdsempty();
-    
+
     if (!str_equals(lastCharOfTargetDir, getPathSeperator())) {
         DBG_OK("last char of dir was: %s", lastCharOfTargetDir);
         absolutePath = sdscatprintf(absolutePath, "%s%s", cfg.targetDir, getPathSeperator());
@@ -446,7 +446,7 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
     else {
         absolutePath = sdscatprintf(absolutePath, "%s", cfg.targetDir);
     }
-    
+
     if (!dir_exists(absolutePath)) {
         logprintf(LOG_INFO, "Creating following folder to store downloads: %s", absolutePath);
         if (mkdir(absolutePath, 0755) == -1) {
@@ -454,13 +454,13 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
             perror("mkdir");
         }
     }
-    
+
     sds completePath = sdsempty();
     completePath = sdscatprintf(completePath, "%s%s", absolutePath, fileName);
-    
+
     sdsfree(lastCharOfTargetDir);
     sdsfree(absolutePath);
-    
+
     struct dccDownloadProgress *progress = newDccProgress(completePath, size);
     curDownload = progress;
 
@@ -488,7 +488,7 @@ void recvFileRequest (irc_session_t *session, const char *nick, const char *addr
 
         logprintf(LOG_INFO, "file %s already exists, need to resume.\n", completePath);
         irc_dcc_resume(session, dccid, context, callback_dcc_resume_file, nick, fileSize);
-    } 
+    }
     else {
         int ret;
         context->fd = Open(completePath, "w");
@@ -530,13 +530,13 @@ void initCallbacks(irc_callbacks_t *callbacks) {
 void init_signal(int signum, void (*handler) (int)) {
     struct sigaction act;
     int ret;
-    
+
     memset(&act, 0, sizeof(act));
     sigemptyset (&act.sa_mask);
-    
+
     act.sa_handler = handler;
     act.sa_flags = SA_RESTART;
-    
+
     ret = sigaction(signum, &act, NULL);
     if (ret == -1) {
         logprintf(LOG_ERR, "could not set up signal %d", signum);
@@ -563,7 +563,7 @@ int main (int argc, char **argv)
 #endif
 
     cfg.targetDir = targetDir;
-    
+
     parseConfigFile(&cfg);
 
     parseArguments(argc, argv, &cfg);
@@ -577,7 +577,7 @@ int main (int argc, char **argv)
 
     init_signal(SIGINT, interrupt_handler);
     init_signal(SIGALRM, output_handler);
-    
+
     irc_callbacks_t callbacks;
     initCallbacks(&callbacks);
     cfg.session = irc_create_session (&callbacks);
@@ -610,7 +610,7 @@ int main (int argc, char **argv)
     else if (cfg_get_bit(&cfg, USE_IPV6_FLAG)) {
         ret = irc_connect6(cfg.session, cfg.ircServer, cfg.port, 0, cfg.nick, 0, 0);
     }
-#endif	
+#endif
     else {
         ret = irc_connect(cfg.session, cfg.ircServer, cfg.port, 0, cfg.nick, 0, 0);
     }
@@ -621,7 +621,7 @@ int main (int argc, char **argv)
     }
 
     alarm(1);
-    
+
     ret = irc_run (cfg.session);
 
     if (ret != 0) {
