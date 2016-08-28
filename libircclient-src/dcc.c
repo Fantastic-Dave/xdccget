@@ -223,7 +223,7 @@ static void send_current_file_offset_to_sender (irc_session_t *session, irc_dcc_
     } else if (unlikely(sentBytes == 0)) {
         err = LIBIRC_ERR_CLOSED;
     } else {
-        if (dcc->received_file_size == dcc->file_confirm_offset) {
+        if (unlikely(dcc->received_file_size == dcc->file_confirm_offset)) {
             DBG_OK("dcc->received_file_size == dcc->file_confirm_offset");
             libirc_mutex_unlock(&session->mutex_dcc);
             (*dcc->cb)(session, dcc->id, 0, dcc->ctx, 0, 0);
