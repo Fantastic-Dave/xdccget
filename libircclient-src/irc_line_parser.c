@@ -160,7 +160,7 @@ static int handle_parser_result (irc_parser *parser, const char *at, size_t len)
         char *command = result->command;
         if (result->command == NULL) return 0;
 
-        irc_command_t *irc_command = get_command(command, strlen(command));
+        const irc_command_t *irc_command = get_command(command, strlen(command));
         irc_command->execute(session, command, result);
     }
 

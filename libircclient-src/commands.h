@@ -19,7 +19,7 @@ extern "C" {
     
     typedef struct irc_command_t irc_command_t;
     
-    irc_command_t* get_command(const char *commandString, size_t n);
+    const irc_command_t* get_command(const char *commandString, size_t n);
     
 #ifdef	__cplusplus
 }

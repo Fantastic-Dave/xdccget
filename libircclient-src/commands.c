@@ -19,7 +19,7 @@ static void irc_invite_command(irc_session_t *session, const char *command, irc_
 static void irc_kill_command(irc_session_t *session, const char *command, irc_parser_result_t *result);
 static void irc_unknown_command(irc_session_t *session, const char *command, irc_parser_result_t *result);
 
-static irc_command_t commands[] = {
+static irc_command_t const commands[] = {
     {"PING", irc_ping_command},
     {"NICK", irc_nick_command},
     {"QUIT", irc_quit_command},
@@ -34,9 +34,9 @@ static irc_command_t commands[] = {
     {"KILL", irc_kill_command}
 };
 
-static irc_command_t unknownCommand = {"UNKNOWN", irc_unknown_command};
+static irc_command_t const unknownCommand = {"UNKNOWN", irc_unknown_command};
 
-irc_command_t* get_command(const char *commandString, size_t n) {
+const irc_command_t* get_command(const char *commandString, size_t n) {
     size_t i = 0;
     
     if (n == 0) {
@@ -46,7 +46,7 @@ irc_command_t* get_command(const char *commandString, size_t n) {
     size_t commandLength = sizeof(commands) / sizeof(irc_command_t);
     
     for (; i < commandLength; i++) {
-        irc_command_t *irc_command = &commands[i];
+        const irc_command_t *irc_command = &commands[i];
         if ( strn_equals(commandString, irc_command->name, n) ) {
             return irc_command;
         }
