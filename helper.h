@@ -74,7 +74,7 @@
 #define FREE(X) \
 do {\
 	if ( (X != NULL) ) {\
-		DBG_OK("freeing %p now\n", X);\
+		DBG_OK("freeing %p now", X);\
 		free(( X ));\
 		X = NULL;\
 	}\
