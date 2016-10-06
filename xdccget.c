@@ -42,7 +42,7 @@ void doCleanUp() {
         freeDccDownload(cfg.dccDownloadArray[i]);
     }
 
-    for (i = 0; i < cfg.numDownloads; i++) {
+    for (i = 0; i < cfg.numDownloads && downloadContext[i]; i++) {
         struct dccDownloadContext *current_context = downloadContext[i];
         struct dccDownloadProgress *current_progress = current_context->progress;
 
