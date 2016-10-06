@@ -17,6 +17,15 @@
      *                   NUL or CR or LF>
 */
 
+
+#define SAFE_FREE(X) \
+do {\
+	if ( (X != NULL) ) {\
+		free(( X ));\
+		X = NULL;\
+	}\
+} while(0)
+
 void free_line_parser(irc_parser *parser) {
     FREE(parser->data);
     FREE(parser);
@@ -30,13 +39,13 @@ void free_parser_result (irc_parser *parser) {
         return;
     }
     
-    FREE(result->nick);
-    FREE(result->name);
-    FREE(result->host);
-    FREE(result->command);
+    SAFE_FREE(result->nick);
+    SAFE_FREE(result->name);
+    SAFE_FREE(result->host);
+    SAFE_FREE(result->command);
     
     for (i = 0; i < result->num_params; i++) {
-        FREE(result->params[i]);
+        SAFE_FREE(result->params[i]);
     }
 
     result->num_params = 0;
