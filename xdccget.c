@@ -30,7 +30,6 @@ struct xdccGetConfig *getCfg() {
 }
 
 void doCleanUp() {
-#ifndef WINDOWS_BUILD
     int i;
     if (cfg.session)
         irc_destroy_session(cfg.session);
@@ -43,7 +42,7 @@ void doCleanUp() {
         freeDccDownload(cfg.dccDownloadArray[i]);
     }
 
-    for (i = 0; downloadContext[i]; i++) {
+    for (i = 0; i < cfg.numDownloads; i++) {
         struct dccDownloadContext *current_context = downloadContext[i];
         struct dccDownloadProgress *current_progress = current_context->progress;
 
@@ -67,7 +66,6 @@ void doCleanUp() {
     FREE(cfg.dccDownloadArray);
     FREE(cfg.channelsToJoin);
     FREE(downloadContext);
-#endif
 }
 
 void exitPgm(int retCode) {
