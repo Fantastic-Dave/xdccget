@@ -2,7 +2,8 @@
 CFLAGS =-std=gnu11 -D_FILE_OFFSET_BITS=64 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -fstack-protector -I libircclient-include/
 #CFLAGS += -DHOSTNAME_VALIDATION
 #CFLAGS += -DDISABLE_SSL_V3
-#CFLAGS += -DDEBUG
+#CFLAGS += -DDONT_CONFIRM_SIZE_TO_BOTS
+#LCFLAGS += -DDEBUG
 LIBS = -lssl -lcrypto -lpthread
 PROG = xdccget
 

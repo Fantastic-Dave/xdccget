@@ -171,8 +171,14 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
 
             dcc->file_confirm_offset += rcvdBytes;
             (*dcc->cb)(ircsession, dcc->id, err, dcc->ctx, dcc->incoming_buf, rcvdBytes);
+        
+      /* if compiled with DONT_CONFIRM_SIZE_TO_BOTS dont send the file offset to the bots
+           because some bots dont want to receive the file offsets...*/
+#ifdef DONT_CONFIRM_SIZE_TO_BOTS
+            dcc->state = LIBIRC_STATE_CONNECTED;
+#else
             dcc->state = LIBIRC_STATE_CONFIRM_SIZE;
-
+#endif
             libirc_mutex_lock(&ircsession->mutex_dcc);
         }
 
