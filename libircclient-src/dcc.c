@@ -568,7 +568,7 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
     unsigned long token;
     irc_dcc_size_t size;
     unsigned short port;
-    
+
     filenamebuf[LIBIRC_BUFFER_SIZE] = (char) 0;
     DBG_OK("---- got dcc req: %s ---", req);
 
@@ -576,7 +576,7 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
         DBG_WARN("received unknown dcc req from nick %s. ignoring that request!", result->nick);
         return;
     }
-   
+
     if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu 0 %" IRC_DCC_SIZE_T_FORMAT" %lu", filenamebuf, &ip, &size,
       &token) == 4) {
         accept_reverse_dcc_send(session, result->nick, req, filenamebuf, ip, size, token, NO_SSL);
@@ -584,6 +584,12 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
     }
     if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
         accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, NO_SSL);
+        return;
+    }
+        /*this matches file names that contain spaces and are are delimited by quotes,
+                 so for example "This is a really long file name with spaces" would match*/
+    else if (sscanf(req, "DCC SEND \"%"LIBIRC_BUFFER_SIZE_STR"[^\"]\" %lu %hu %" IRC_DCC_SIZE_T_FORMAT, filenamebuf, &ip, &port, &size) == 4) {
+         accept_dcc_send(session, result->nick, req, filenamebuf, ip, size, port, NO_SSL);
         return;
     } else if (sscanf(req, "DCC SEND %"LIBIRC_BUFFER_SIZE_STR"s %lu %hu", filenamebuf, &ip, &port) == 3) {
         size = 0;
