@@ -16,6 +16,10 @@ static char doc[] =
 /* A description of the arguments we accept. */
 static char args_doc[] = "<server> <channel(s)> <bot cmds>";
 
+#define OPT_ACCEPT_ALL_NICKS 1
+#define OPT_DONT_CONFIRM_OFFSETS 2
+
+
 /* The options we understand. */
 static struct argp_option options[] = {
 {"verbose",  'v', 0,      0,  "Produce verbose output" },
@@ -30,6 +34,8 @@ static struct argp_option options[] = {
 {"directory",   'd', "<download-directory>",      0,  "Directory, where to place the files." },
 {"nick",   'n', "<nickname>",      0,  "Use this specific nickname while connecting to the irc-server." },
 {"login",   'l', "<login-command>",      0,  "Use this login-command to authorize your nick to the irc-server after connecting." },
+{"accept-all-nicks",   OPT_ACCEPT_ALL_NICKS, 0,      0,  "Accept DCC send requests from ALL bots and do not verify any nicknames of incoming dcc requests." },
+{"dont-confirm-offsets",   OPT_DONT_CONFIRM_OFFSETS, 0,      0,  "Do not send file offsets to the bots. Can be used on bots where the transfer gets stucked after a short while." },
 { 0 }
 };
 
@@ -84,6 +90,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         cfg->port = (unsigned short) strtoul(arg, NULL, 0);
         DBG_OK("setting port as %u", cfg->port);
         break;
+	
+    case OPT_ACCEPT_ALL_NICKS:
+        cfg_set_bit(cfg, ACCEPT_ALL_NICKS_FLAG);
+        break;
+    case OPT_DONT_CONFIRM_OFFSETS:
+	    cfg_set_bit(cfg, DONT_CONFIRM_OFFSETS_FLAG);
+	    break;
     case '4':
         cfg_set_bit(cfg, USE_IPV4_FLAG);
         break;

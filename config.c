@@ -6,6 +6,7 @@ static void downloadDirCallback(struct xdccGetConfig *config, sds value);
 static void parseLogLevel(struct xdccGetConfig *config, sds value);
 static void allowAllCertsCallback(struct xdccGetConfig *config, sds value);
 static void verifyChecksumsCallback (struct xdccGetConfig *config, sds value);
+static void confirmFileOffsetsCallback (struct xdccGetConfig *config, sds value);
 
 typedef void (*ConfigLineParserFunction) (struct xdccGetConfig *config, sds value);
 
@@ -19,6 +20,7 @@ static struct ConfigLineParser configLineCallbacks[] = {
     {"logLevel",        parseLogLevel},
     {"allowAllCerts",   allowAllCertsCallback},
     {"verifyChecksums", verifyChecksumsCallback},
+    {"confirmFileOffsets", confirmFileOffsetsCallback},
 };
 
 static void verifyChecksumsCallback (struct xdccGetConfig *config, sds value) {
@@ -42,6 +44,15 @@ static void allowAllCertsCallback(struct xdccGetConfig *config, sds value) {
 static void downloadDirCallback(struct xdccGetConfig *config, sds value) {
     sdsfree(config->targetDir);
     config->targetDir = sdsdup(value);
+}
+
+static void confirmFileOffsetsCallback (struct xdccGetConfig *config, sds value) {
+    if (str_equals(value, "true")) {
+        cfg_clear_bit(config, DONT_CONFIRM_OFFSETS_FLAG);
+     }
+     else {
+        cfg_set_bit(config, DONT_CONFIRM_OFFSETS_FLAG);
+     }
 }
 
 static void parseLogLevel(struct xdccGetConfig *config, sds logLevel) {
@@ -71,6 +82,8 @@ static sds getDefaultConfigContent() {
     content = sdscatprintf(content, "allowAllCerts=true\n");
     content = sdscatprintf(content, "# stay connected after downloads finished to automatically verify checksums\n");
     content = sdscatprintf(content, "verifyChecksums=false\n");
+    content = sdscatprintf(content, "# Do not send file offsets to the bots if set to false. Can be used on bots where the transfer gets stucked after a short while.\n");
+    content = sdscatprintf(content, "confirmFileOffsets=true\n");
     
     sdsfree(downloadDir);
 

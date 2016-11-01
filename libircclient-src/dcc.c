@@ -172,13 +172,14 @@ static void recv_dcc_file(irc_session_t *ircsession, irc_dcc_session_t *dcc) {
             dcc->file_confirm_offset += rcvdBytes;
             (*dcc->cb)(ircsession, dcc->id, err, dcc->ctx, dcc->incoming_buf, rcvdBytes);
         
-      /* if compiled with DONT_CONFIRM_SIZE_TO_BOTS dont send the file offset to the bots
+      /* if DONT_CONFIRM_OFFSETS_FLAG is set dont send the file offset to the bots
            because some bots dont want to receive the file offsets...*/
-#ifdef DONT_CONFIRM_SIZE_TO_BOTS
-            dcc->state = LIBIRC_STATE_CONNECTED;
-#else
-            dcc->state = LIBIRC_STATE_CONFIRM_SIZE;
-#endif
+            if (cfg_get_bit(getCfg(), DONT_CONFIRM_OFFSETS_FLAG)) {
+                dcc->state = LIBIRC_STATE_CONNECTED;
+	    } else {
+                dcc->state = LIBIRC_STATE_CONFIRM_SIZE;
+	    }
+	    
             libirc_mutex_lock(&ircsession->mutex_dcc);
         }
 
@@ -552,11 +553,17 @@ static void accept_reverse_dcc_send(irc_session_t * session, const char * nick, 
     logprintf(LOG_WARN, "xdccget does not support reverse dcc send requests yet!", filename);
 }
 
-static inline bool isValidRequestFromNick(struct dccDownload **dccDownloads, char *botNick) {
+static inline bool isValidRequestFromNick(char *botNick) {
     unsigned int i = 0;
+    
+    struct dccDownload **dccDownloads = getCfg()->dccDownloadArray;
 
     if (dccDownloads == NULL) {
         return false;
+    }
+
+    if (cfg_get_bit(getCfg(), ACCEPT_ALL_NICKS_FLAG)) {
+        return true;
     }
 
     for (i = 0; dccDownloads[i]; i++) {
@@ -578,7 +585,7 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
     filenamebuf[LIBIRC_BUFFER_SIZE] = (char) 0;
     DBG_OK("---- got dcc req: %s ---", req);
 
-    if (!isValidRequestFromNick(getCfg()->dccDownloadArray, result->nick)) {
+    if (!isValidRequestFromNick(result->nick)) {
         DBG_WARN("received unknown dcc req from nick %s. ignoring that request!", result->nick);
         return;
     }
@@ -633,10 +640,8 @@ static void libirc_dcc_request(irc_session_t * session, irc_parser_result_t *res
         return;
 
     }
-#if defined (ENABLE_DEBUG)
-    fprintf(stderr, "BUG: Unhandled DCC message: %s\n", req);
-    abort();
-#endif
+
+    DBG_ERR("BUG: Unhandled DCC message: %s", req);
 }
 
 int irc_dcc_accept(irc_session_t * session, irc_dcc_t dccid, void * ctx, irc_dcc_callback_t callback) {
