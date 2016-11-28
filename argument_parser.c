@@ -22,27 +22,27 @@ static char args_doc[] = "<server> <channel(s)> <bot cmds>";
 
 /* The options we understand. */
 static struct argp_option options[] = {
-{"verbose",  'v', 0,      0,  "Produce verbose output" },
-{"quiet",    'q', 0,      0,  "Don't produce any output" },
-{"information",    'i', 0,      0,  "Produce information output." },
-{"checksum-verify", 'c', 0,      0,  "Stay connected after download completed to verify checksums." },
-{"ipv4",   '4', 0,      0,  "Use ipv4 to connect to irc server." },
+{"verbose",  'v', 0,      0,  "Produce verbose output", 0 },
+{"quiet",    'q', 0,      0,  "Don't produce any output", 0 },
+{"information",    'i', 0,      0,  "Produce information output.", 0 },
+{"checksum-verify", 'c', 0,      0,  "Stay connected after download completed to verify checksums.", 0 },
+{"ipv4",   '4', 0,      0,  "Use ipv4 to connect to irc server.", 0 },
 #ifdef ENABLE_IPV6
-{"ipv6",   '6', 0,      0,  "Use ipv6 to connect to irc server." },
+{"ipv6",   '6', 0,      0,  "Use ipv6 to connect to irc server.", 0 },
 #endif
-{"port",   'p', "<port number>",      0,  "Use the following port to connect to server. default is 6667." },
-{"directory",   'd', "<download-directory>",      0,  "Directory, where to place the files." },
-{"nick",   'n', "<nickname>",      0,  "Use this specific nickname while connecting to the irc-server." },
-{"login",   'l', "<login-command>",      0,  "Use this login-command to authorize your nick to the irc-server after connecting." },
-{"accept-all-nicks",   OPT_ACCEPT_ALL_NICKS, 0,      0,  "Accept DCC send requests from ALL bots and do not verify any nicknames of incoming dcc requests." },
-{"dont-confirm-offsets",   OPT_DONT_CONFIRM_OFFSETS, 0,      0,  "Do not send file offsets to the bots. Can be used on bots where the transfer gets stucked after a short while." },
+{"port",   'p', "<port number>",      0,  "Use the following port to connect to server. default is 6667.", 0 },
+{"directory",   'd', "<download-directory>",      0,  "Directory, where to place the files." , 0 },
+{"nick",   'n', "<nickname>",      0,  "Use this specific nickname while connecting to the irc-server.", 0 },
+{"login",   'l', "<login-command>",      0,  "Use this login-command to authorize your nick to the irc-server after connecting.", 0 },
+{"accept-all-nicks",   OPT_ACCEPT_ALL_NICKS, 0,      0,  "Accept DCC send requests from ALL bots and do not verify any nicknames of incoming dcc requests.", 0 },
+{"dont-confirm-offsets",   OPT_DONT_CONFIRM_OFFSETS, 0,      0,  "Do not send file offsets to the bots. Can be used on bots where the transfer gets stucked after a short while.", 0 },
 { 0 }
 };
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state);
 
 /* Our argp parser. */
-static struct argp argp = { options, parse_opt, args_doc, doc };
+static struct argp argp = { options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 /* Parse a single option. */
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
