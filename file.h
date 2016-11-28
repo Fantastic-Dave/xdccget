@@ -61,7 +61,7 @@ static inline off_t get_file_size(char *filename){
 #ifdef FILE_API
 static inline size_t Read (file_io_t *fd, void *buf, size_t count) {
 #else
-static inline ssize_t Read (file_io_t *fd, void *buf, size_t count) {
+static inline ssize_t Read (file_io_t *fd, void *buf, ssize_t count) {
 #endif
 #ifdef FILE_API
     size_t readBytes = fread(buf, 1, count, fd->fd);
@@ -86,7 +86,11 @@ static inline ssize_t Read (file_io_t *fd, void *buf, size_t count) {
 #endif
 }
 
+#ifdef FILE_API
 static inline void Write(file_io_t *fd, const void *buf, size_t count) {
+#else
+  static inline void Write(file_io_t *fd, const void *buf, ssize_t count) {
+#endif
 #ifdef FILE_API
     size_t written = fwrite(buf, 1, count, fd->fd);
     if (unlikely(written != count)) {

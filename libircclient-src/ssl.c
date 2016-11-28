@@ -47,7 +47,7 @@ static unsigned long cb_openssl_id_function() {
 }
 
 static int alloc_mutexes(unsigned int total) {
-    int i;
+    unsigned int i;
 
     // Enable thread safety in OpenSSL
     mutex_buf = (pthread_mutex_t*) malloc(total * sizeof (pthread_mutex_t));

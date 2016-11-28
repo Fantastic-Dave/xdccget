@@ -57,9 +57,6 @@ void logprintf(int logLevel, char *formatString, ...) {
     va_start(va_alist, formatString);
 
     switch (logLevel) {
-        case LOG_QUIET:
-
-           break;
         case LOG_INFO:
             if (cfg->logLevel >= LOG_INFO) {
                 logprintf_line(stdout, KGRN, "Info", formatString, va_alist);
@@ -169,7 +166,7 @@ int printSize(irc_dcc_size_t size) {
     char *sizeNames[] = {"Byte", "KByte", "MByte", "GByte", "TByte", "PByte"};
 
     double temp = (double) size;
-    int i = 0;
+    unsigned int i = 0;
 
     while (temp > 1024) {
         temp /= 1024;

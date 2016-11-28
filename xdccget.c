@@ -30,7 +30,7 @@ struct xdccGetConfig *getCfg() {
 }
 
 void doCleanUp() {
-    int i;
+    uint32_t i;
     if (cfg.session)
         irc_destroy_session(cfg.session);
 
@@ -196,7 +196,7 @@ static void checkMD5ChecksumNotice(const char * event, irc_parser_result_t *resu
 void dump_event (irc_session_t * session, const char * event, irc_parser_result_t *result)
 {
     sds param_string = sdsempty();
-    int cnt;
+    unsigned int cnt;
 
     for (cnt = 0; cnt < result->num_params; cnt++) {
         if (cnt)
@@ -212,8 +212,7 @@ void dump_event (irc_session_t * session, const char * event, irc_parser_result_
 }
 
 static void join_channels(irc_session_t *session) {
-    int i;
-    for (i = 0; i < cfg.numChannels; i++) {
+    for (uint32_t i = 0; i < cfg.numChannels; i++) {
         logprintf(LOG_INFO, "joining %s\n", cfg.channelsToJoin[i]);
         irc_cmd_join (session, cfg.channelsToJoin[i], 0);
     }
