@@ -1,5 +1,6 @@
 #CC=gcc
-CFLAGS =-std=gnu11 -D_FILE_OFFSET_BITS=64 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -fstack-protector -I libircclient-include/
+CFLAGS =-std=gnu99 -D_FILE_OFFSET_BITS=64 -DENABLE_SSL -DENABLE_IPV6 -Wall -Wfatal-errors -Os -fstack-protector -I libircclient-include/
+#CFLAGS += -Wsign-compare -Wtype-limits
 #CFLAGS += -DHOSTNAME_VALIDATION
 #CFLAGS += -DDISABLE_SSL_V3
 #CFLAGS += -DDEBUG
