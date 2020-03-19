@@ -286,7 +286,12 @@ static void print_validation_errstr(long verify_result) {
 }
 
 int openssl_check_certificate_callback(int verify_result, X509_STORE_CTX *ctx) {
-    X509* cert =ctx->cert;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    X509* cert = ctx->cert;
+#else
+    X509* cert = X509_STORE_CTX_get0_cert(ctx);
+#endif
+    
     struct xdccGetConfig *cfg = getCfg();
     
     if (cert == NULL) {
@@ -303,7 +308,7 @@ int openssl_check_certificate_callback(int verify_result, X509_STORE_CTX *ctx) {
     logprintf(LOG_INFO, "%s", issuer);
     
     if (!verify_result) {
-        print_validation_errstr(ctx->error);
+        print_validation_errstr(X509_STORE_CTX_get_error(ctx));
     }
     else {
         logprintf(LOG_INFO, "This certificate is trusted");
